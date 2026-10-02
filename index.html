@@ -57,6 +57,11 @@
 
     <!-- ETAPA 1: dados da venda (loja) -->
     <div class="card" id="etapa1">
+      <label>Selecionar do estoque <span style="font-weight:400;color:var(--muted)">(opcional)</span></label>
+      <select id="estoqueSelect">
+        <option value="">— Digitar manualmente —</option>
+      </select>
+
       <label>Produto</label>
       <textarea id="produto" placeholder="Ex: Notebook Dell i5 8GB RAM 256GB SSD"></textarea>
       <div class="row">
@@ -220,11 +225,50 @@
     condicao: paramsUrl.get('condicao') || '',
     valor: paramsUrl.get('valor') || '',
     formaPagamento: paramsUrl.get('formaPagamento') || '',
-    data: paramsUrl.get('data') || ''
+    data: paramsUrl.get('data') || '',
+    aparelhoEstoqueId: paramsUrl.get('aparelhoEstoqueId') || ''
   };
   let temDadosDaVenda = !!dadosVendaServidor.produto;
 
   document.getElementById('data').valueAsDate = new Date();
+
+  // ---- Seletor de estoque (puxa aparelhos "Disponível" e preenche os campos) ----
+  let estoqueDevices = [];
+  let aparelhoEstoqueSelecionadoId = '';
+
+  function montarDescricaoAparelho(d) {
+    return [d.modelo, d.processador, d.ram, d.armazenamento, d.gpu].filter(Boolean).join(' ');
+  }
+
+  function carregarEstoqueDisponivel() {
+    const qs = new URLSearchParams({ senha: SENHA, action: 'estoque_listar' });
+    fetch(WEBAPP_URL + '?' + qs.toString())
+      .then(function (r) { return r.json(); })
+      .then(function (res) {
+        if (!res.ok) return;
+        estoqueDevices = (res.devices || []).filter(function (d) { return d.status === 'disponivel'; });
+        const select = document.getElementById('estoqueSelect');
+        const opcoes = ['<option value="">— Digitar manualmente —</option>'].concat(
+          estoqueDevices.map(function (d) {
+            return '<option value="' + d.id + '">' + montarDescricaoAparelho(d) + ' — R$ ' + (Number(d.venda) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 }) + '</option>';
+          })
+        );
+        select.innerHTML = opcoes.join('');
+      })
+      .catch(function () { /* se o estoque não carregar, o preenchimento manual continua funcionando normalmente */ });
+  }
+  carregarEstoqueDisponivel();
+
+  document.getElementById('estoqueSelect').addEventListener('change', function () {
+    aparelhoEstoqueSelecionadoId = this.value;
+    if (!aparelhoEstoqueSelecionadoId) return;
+    const d = estoqueDevices.find(function (x) { return x.id === aparelhoEstoqueSelecionadoId; });
+    if (!d) return;
+    document.getElementById('produto').value = montarDescricaoAparelho(d);
+    document.getElementById('condicao').value = (d.condicao || '').toUpperCase() === 'NOVO' ? 'NOVO'
+      : (d.condicao || '').toUpperCase() === 'RECONDICIONADO' ? 'RECONDICIONADO' : 'USADO';
+    document.getElementById('valor').value = Number(d.venda) || '';
+  });
 
   function formatarDataExibicao(dataIso) {
     if (!dataIso) return '';
@@ -254,7 +298,8 @@
       condicao: document.getElementById('condicao').value,
       valor: document.getElementById('valor').value.trim(),
       formaPagamento: document.getElementById('formaPagamento').value.trim(),
-      data: document.getElementById('data').value
+      data: document.getElementById('data').value,
+      aparelhoEstoqueId: aparelhoEstoqueSelecionadoId
     };
   }
 
@@ -357,6 +402,17 @@
         '<a class="btn btn-principal" href="' + dados.pdfDownloadUrl + '" target="_blank" rel="noopener">Baixar PDF</a>' +
         '<a class="btn btn-secundario" href="' + dados.url + '" target="_blank" rel="noopener">Abrir no Google Docs</a>' +
         '</div>';
+
+      if (dadosVenda.aparelhoEstoqueId) {
+        const qsVendido = new URLSearchParams({
+          senha: SENHA,
+          action: 'estoque_status',
+          id: dadosVenda.aparelhoEstoqueId,
+          status: 'vendido',
+          dataVenda: dadosVenda.data
+        });
+        fetch(WEBAPP_URL + '?' + qsVendido.toString()).catch(function () { /* contrato já foi gerado; baixa no estoque pode ser feita manualmente se isso falhar */ });
+      }
     } catch (err) {
       document.getElementById('resultado').innerHTML = '<div class="msg-erro">Erro de conexão: ' + err.message + '</div>';
     } finally {
