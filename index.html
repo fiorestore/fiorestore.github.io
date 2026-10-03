@@ -132,7 +132,7 @@
     </div>
 
     <a class="voltar" href="#" id="btnIrCalc" style="display:block; text-align:center;">🧮 Calculadora de juros da maquininha</a>
-    <a class="voltar" href="https://fiorestore.github.io/estoque.html" style="display:block; text-align:center;">📦 Estoque de notebooks</a>
+    <a class="voltar" href="https://fiorestore.github.io/estoque.html" id="linkEstoque" style="display:block; text-align:center;">📦 Estoque de notebooks</a>
   </div>
 
   <!-- ===== TELA: CALCULADORA DE JUROS ===== -->
@@ -184,7 +184,7 @@
     <a class="voltar" href="#" id="btnVoltarContrato">&laquo; voltar pro gerador de contrato</a>
   </div>
 
-  <div class="rodape">Uso interno Fiore Store</div>
+  <div class="rodape" id="rodapeInterno">Uso interno Fiore Store</div>
 </div>
 
 <script>
@@ -230,6 +230,13 @@
   };
   let temDadosDaVenda = !!dadosVendaServidor.produto;
 
+  // Link enviado ao cliente: esconder ferramentas de uso interno da loja
+  if (temDadosDaVenda) {
+    document.getElementById('btnIrCalc').style.display = 'none';
+    document.getElementById('linkEstoque').style.display = 'none';
+    document.getElementById('rodapeInterno').style.display = 'none';
+  }
+
   document.getElementById('data').valueAsDate = new Date();
 
   // ---- Seletor de estoque (puxa aparelhos "Disponível" e preenche os campos) ----
@@ -257,7 +264,9 @@
       })
       .catch(function () { /* se o estoque não carregar, o preenchimento manual continua funcionando normalmente */ });
   }
-  carregarEstoqueDisponivel();
+  if (!temDadosDaVenda) {
+    carregarEstoqueDisponivel();
+  }
 
   document.getElementById('estoqueSelect').addEventListener('change', function () {
     aparelhoEstoqueSelecionadoId = this.value;
