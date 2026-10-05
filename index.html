@@ -43,6 +43,12 @@
   .voltar { display:inline-block; margin-top:16px; color:var(--muted); font-size:13px; text-decoration:none; text-align:center; width:100%; }
   .rodape { text-align:center; color:var(--muted); font-size:12px; margin-top:24px; }
   [hidden] { display:none !important; }
+
+  .home-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:12px; margin-top:4px; }
+  .home-card { background:var(--card); border:1px solid var(--border); border-radius:14px; padding:26px 12px; box-shadow:0 1px 3px rgba(0,0,0,0.08); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; text-decoration:none; color:var(--text); cursor:pointer; font-family:inherit; font-size:14px; font-weight:600; text-align:center; }
+  .home-card:hover { border-color:var(--primary); background:var(--brand-tint); }
+  .home-icon { font-size:30px; line-height:1; }
+  @media (min-width:600px) { .home-grid { grid-template-columns:repeat(4,1fr); } }
 </style>
 </head>
 <body>
@@ -51,8 +57,40 @@
 </div>
 <div class="wrap">
 
+  <!-- ===== TELA: PAINEL (HOME) ===== -->
+  <div id="telaHome">
+    <div class="subtitle">Sistema interno</div>
+    <div class="home-grid">
+      <button class="home-card" id="cardContrato" type="button">
+        <span class="home-icon">📄</span><span>Novo contrato</span>
+      </button>
+      <button class="home-card" id="cardCalc" type="button">
+        <span class="home-icon">💳</span><span>Calculadora Stone</span>
+      </button>
+      <a class="home-card" href="https://fiorestore.github.io/estoque.html">
+        <span class="home-icon">💻</span><span>Estoque</span>
+      </a>
+      <a class="home-card" href="https://fiorestore.github.io/vendas.html">
+        <span class="home-icon">📦</span><span>Vendas</span>
+      </a>
+      <a class="home-card" href="https://fiorestore.github.io/financeiro.html">
+        <span class="home-icon">💰</span><span>Financeiro</span>
+      </a>
+      <a class="home-card" href="https://fiorestore.github.io/clientes.html">
+        <span class="home-icon">👥</span><span>Clientes</span>
+      </a>
+      <a class="home-card" href="https://fiorestore.github.io/assistencia.html">
+        <span class="home-icon">🛠️</span><span>Assistência</span>
+      </a>
+      <a class="home-card" href="https://fiorestore.github.io/relatorios.html">
+        <span class="home-icon">📊</span><span>Relatórios</span>
+      </a>
+    </div>
+  </div>
+
   <!-- ===== TELA: GERADOR DE CONTRATO ===== -->
-  <div id="telaContrato">
+  <div id="telaContrato" hidden>
+    <a class="voltar" href="#" id="btnVoltarHome" style="margin-top:0; margin-bottom:8px;">&laquo; voltar ao painel</a>
     <div class="subtitle" id="subtitulo">Gerador de Contrato de Compra, Venda e Garantia</div>
 
     <!-- ETAPA 1: dados da venda (loja) -->
@@ -137,6 +175,7 @@
 
   <!-- ===== TELA: CALCULADORA DE JUROS ===== -->
   <div id="telaCalc" hidden>
+    <a class="voltar" href="#" id="btnVoltarHomeCalc" style="margin-top:0; margin-bottom:8px;">&laquo; voltar ao painel</a>
     <div class="subtitle">Calculadora de Juros da Maquininha (Stone)</div>
 
     <div class="card">
@@ -200,19 +239,27 @@
     '18': 18.95, '19': 19.81, '20': 20.66, '21': 21.52
   };
 
-  // ---- Navegação entre telas (gerador de contrato / calculadora) ----
+  // ---- Navegação entre telas (painel / gerador de contrato / calculadora) ----
+  const telaHome = document.getElementById('telaHome');
   const telaContrato = document.getElementById('telaContrato');
   const telaCalc = document.getElementById('telaCalc');
 
+  function showHome() { telaHome.hidden = false; telaContrato.hidden = true; telaCalc.hidden = true; }
+  function showContrato() { telaHome.hidden = true; telaContrato.hidden = false; telaCalc.hidden = true; }
+  function showCalc() { telaHome.hidden = true; telaContrato.hidden = true; telaCalc.hidden = false; }
+
+  document.getElementById('cardContrato').addEventListener('click', showContrato);
+  document.getElementById('cardCalc').addEventListener('click', showCalc);
+  document.getElementById('btnVoltarHome').addEventListener('click', function (e) { e.preventDefault(); showHome(); });
+  document.getElementById('btnVoltarHomeCalc').addEventListener('click', function (e) { e.preventDefault(); showHome(); });
+
   document.getElementById('btnIrCalc').addEventListener('click', function (e) {
     e.preventDefault();
-    telaContrato.hidden = true;
-    telaCalc.hidden = false;
+    showCalc();
   });
   document.getElementById('btnVoltarContrato').addEventListener('click', function (e) {
     e.preventDefault();
-    telaCalc.hidden = true;
-    telaContrato.hidden = false;
+    showContrato();
   });
 
   // ---- Gerador de contrato ----
@@ -230,12 +277,16 @@
   };
   let temDadosDaVenda = !!dadosVendaServidor.produto;
 
-  // Link enviado ao cliente: esconder ferramentas de uso interno da loja
+  // Link enviado ao cliente: pular o painel interno e esconder ferramentas de uso interno da loja
   if (temDadosDaVenda) {
     document.getElementById('btnIrCalc').style.display = 'none';
     document.getElementById('linkEstoque').style.display = 'none';
     document.getElementById('rodapeInterno').style.display = 'none';
     document.getElementById('linkVoltar').style.display = 'none';
+    document.getElementById('btnVoltarHome').style.display = 'none';
+    showContrato();
+  } else {
+    showHome();
   }
 
   document.getElementById('data').valueAsDate = new Date();
