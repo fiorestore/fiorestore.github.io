@@ -228,7 +228,7 @@
 
 <script>
   // URL do App da Web (Google Apps Script) — usado só como API de geração de PDF, nunca carregado como página.
-  const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbwZGRtyulaSh08wvvmdnF2A2sQ5dqwTbTBi7TS76pAkgZRmBB9YdkJ8j2jd3JltbdDVyw/exec';
+  const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbw22fQo18s_OSnF8zBUGagKBoAk-5b0bymc2XCPcusiaE-IRb2nFfyZsB31ywvqeV5RBA/exec';
   const SENHA = 'TROQUE_PARA_UMA_SENHA_SUA';
 
   const TAXAS = {
@@ -474,6 +474,25 @@
         });
         fetch(WEBAPP_URL + '?' + qsVendido.toString()).catch(function () { /* contrato já foi gerado; baixa no estoque pode ser feita manualmente se isso falhar */ });
       }
+
+      // Cadastra/atualiza o cliente e registra a compra no histórico dele (ação a implementar no backend).
+      const qsCliente = new URLSearchParams({
+        senha: SENHA,
+        action: 'cliente_registrar_compra',
+        nome: nome,
+        cidade: cidade,
+        telefone: telefone,
+        cpf: cpf,
+        endereco: endereco,
+        cep: cep,
+        complemento: complemento,
+        produto: dadosVenda.produto,
+        condicao: dadosVenda.condicao,
+        valor: dadosVenda.valor,
+        formaPagamento: dadosVenda.formaPagamento,
+        data: dadosVenda.data
+      });
+      fetch(WEBAPP_URL + '?' + qsCliente.toString()).catch(function () { /* contrato já foi gerado; cadastro do cliente pode ser feito manualmente se isso falhar */ });
     } catch (err) {
       document.getElementById('resultado').innerHTML = '<div class="msg-erro">Erro de conexão: ' + err.message + '</div>';
     } finally {
