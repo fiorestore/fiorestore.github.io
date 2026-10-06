@@ -108,7 +108,7 @@
 
 <div class="wrap">
   <div class="subtitle">Ordens de serviço — entrada, diagnóstico e envio ao cliente</div>
-  <a class="backlink" href="https://fiorestore.github.io/">« voltar ao painel</a>
+  <a class="backlink" id="backlink" href="https://fiorestore.github.io/">« voltar ao painel</a>
 
   <div id="banner"></div>
 
@@ -178,6 +178,10 @@
 
   var WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbw22fQo18s_OSnF8zBUGagKBoAk-5b0bymc2XCPcusiaE-IRb2nFfyZsB31ywvqeV5RBA/exec';
   var SENHA = 'TROQUE_PARA_UMA_SENHA_SUA';
+
+  if (new URLSearchParams(location.search).get('painel') === 'funcionario') {
+    document.getElementById('backlink').href = 'https://fiorestore.github.io/painel-funcionario.html';
+  }
 
   var state = {
     tickets: [],
