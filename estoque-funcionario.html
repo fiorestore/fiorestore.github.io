@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Estoque · Fiore Store</title>
+<style>
+  :root {
+    --brand:#FCAD2C; --brand-tint:#FDF1DD;
+    --primary:#A0640A; --primary-dark:#7A4B02;
+    --bg:#FBF8F3; --card:#ffffff; --text:#1d1d1f; --muted:#6e6e73;
+    --border:#e7ddcb; --error:#c0392b; --error-tint:#fdecea;
+    --success:#1e7e34; --success-tint:#eaf6ec;
+    --info:#2b6cb0; --info-tint:#e8f1fb;
+    --shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif; background:var(--bg); color:var(--text); }
+  .header { background:var(--brand); padding:26px 16px 20px; text-align:center; }
+  .header h1 { margin:0; color:#fff; font-size:22px; text-shadow:0 1px 2px rgba(0,0,0,0.12); }
+  .wrap { max-width:920px; margin:0 auto; padding:24px 16px 80px; }
+  .subtitle { color:var(--muted); font-size:14px; margin-bottom:4px; text-align:center; }
+  .backlink { display:block; text-align:center; color:var(--muted); font-size:12.5px; margin-bottom:22px; text-decoration:none; }
+  .backlink:hover { color:var(--primary); text-decoration:underline; }
+
+  .tabs { display:flex; gap:6px; margin-bottom:16px; overflow-x:auto; -webkit-overflow-scrolling:touch; }
+  .tab { flex:none; display:flex; align-items:center; gap:7px; padding:9px 14px; border-radius:10px; border:1px solid var(--border); background:var(--card); color:var(--muted); font-size:13.5px; font-weight:600; cursor:pointer; }
+  .tab .n { background:var(--bg); color:var(--muted); border-radius:999px; padding:1px 7px; font-size:11.5px; font-variant-numeric:tabular-nums; }
+  .tab.active { background:var(--primary); border-color:var(--primary); color:#fff; }
+  .tab.active .n { background:rgba(255,255,255,0.25); color:#fff; }
+
+  .toolbar { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:16px; }
+  .toolbar input[type=search] { flex:1 1 180px; padding:10px 12px; border:1px solid var(--border); border-radius:8px; font-size:14px; background:var(--card); color:var(--text); }
+  .toolbar input:focus { outline:none; border-color:var(--primary); }
+  .btn { border:none; border-radius:9px; font-size:14px; font-weight:600; cursor:pointer; padding:10px 16px; white-space:nowrap; }
+  .btn-secundario { background:var(--card); color:var(--primary); border:1px solid var(--primary); }
+  .btn-secundario:hover { background:var(--brand-tint); }
+  .btn-ghost { background:transparent; color:var(--muted); border:1px solid var(--border); }
+  .btn-ghost:hover { border-color:var(--primary); color:var(--primary); }
+  .btn-sm { padding:7px 12px; font-size:13px; border-radius:7px; }
+  .btn:disabled { opacity:.6; cursor:default; }
+
+  .banner { background:var(--brand-tint); border:1px solid var(--border); color:var(--text); border-radius:10px; padding:10px 14px; font-size:13px; margin-bottom:16px; }
+
+  .list { display:flex; flex-direction:column; gap:10px; }
+  .device { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:16px 18px; box-shadow:var(--shadow); }
+  .device-top { display:flex; justify-content:space-between; align-items:flex-start; gap:10px; flex-wrap:wrap; }
+  .device-model { font-size:16px; font-weight:700; }
+  .device-sub { color:var(--muted); font-size:12.5px; margin-top:2px; }
+  .badge { font-size:11.5px; font-weight:700; padding:4px 10px; border-radius:999px; white-space:nowrap; text-transform:uppercase; letter-spacing:.02em; }
+  .badge-preparacao { background:var(--brand-tint); color:var(--primary-dark); }
+  .badge-disponivel { background:var(--info-tint); color:var(--info); }
+  .badge-vendido { background:var(--success-tint); color:var(--success); }
+
+  .chips { display:flex; flex-wrap:wrap; gap:6px; margin-top:12px; }
+  .chip { background:var(--brand-tint); color:var(--primary-dark); font-size:12.5px; padding:5px 10px; border-radius:7px; }
+
+  .preco { margin-top:12px; }
+  .preco .k { color:var(--muted); font-size:11.5px; text-transform:uppercase; letter-spacing:.03em; font-weight:700; }
+  .preco .v { font-size:18px; font-weight:700; font-variant-numeric:tabular-nums; color:var(--primary-dark); margin-top:2px; }
+
+  .meta { color:var(--muted); font-size:12px; margin-top:10px; }
+  .obs { font-size:13px; margin-top:8px; color:var(--text); background:var(--bg); border-radius:7px; padding:8px 10px; }
+
+  .device-actions { display:flex; gap:8px; margin-top:14px; flex-wrap:wrap; }
+
+  .empty { text-align:center; padding:50px 20px; color:var(--muted); }
+  .empty p { margin:4px 0; font-size:14px; }
+
+  .toast { position:fixed; left:50%; bottom:20px; transform:translateX(-50%); background:var(--text); color:var(--bg); padding:10px 18px; border-radius:999px; font-size:13px; box-shadow:0 4px 14px rgba(0,0,0,.2); z-index:50; }
+
+  [hidden] { display:none !important; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Estoque Fiore</h1>
+</div>
+
+<div class="wrap">
+  <div class="subtitle">Consulta de notebooks e MacBooks disponíveis</div>
+  <a class="backlink" href="https://fiorestore.github.io/painel-funcionario.html">« voltar ao painel</a>
+
+  <div id="banner"></div>
+
+  <div class="tabs" id="tabs"></div>
+
+  <div class="toolbar">
+    <input type="search" id="search" placeholder="Buscar por modelo, processador ou série…">
+    <button class="btn btn-ghost" id="btnRefresh">Atualizar</button>
+  </div>
+
+  <div class="list" id="list"></div>
+
+  <div class="empty" id="emptyState" hidden>
+    <p id="emptyText">Nenhum aparelho cadastrado ainda.</p>
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbw22fQo18s_OSnF8zBUGagKBoAk-5b0bymc2XCPcusiaE-IRb2nFfyZsB31ywvqeV5RBA/exec';
+  var SENHA = 'TROQUE_PARA_UMA_SENHA_SUA';
+
+  var state = {
+    devices: [],
+    loaded: false,
+    search: "",
+    filterStatus: "disponivel"
+  };
+
+  var STATUS_LABEL = { preparacao: "Em preparação", disponivel: "Disponível", vendido: "Vendido" };
+  var normalizeStatus = function (s) { return s || "preparacao"; };
+
+  var fmtMoney = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
+  var fmtDate = function (iso) {
+    if (!iso) return "";
+    var p = String(iso).split("-");
+    if (p.length !== 3) return iso;
+    return p[2].slice(0,2) + "/" + p[1] + "/" + p[0];
+  };
+  var todayISO = function () {
+    var d = new Date();
+    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  };
+  var escapeHtml = function (s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  };
+
+  var toastTimer = null;
+  function toast(msg) {
+    var el = document.getElementById("toastEl");
+    if (el) el.remove();
+    el = document.createElement("div");
+    el.id = "toastEl";
+    el.className = "toast";
+    el.textContent = msg;
+    document.body.appendChild(el);
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { el.remove(); }, 3200);
+  }
+
+  function setBanner(html) {
+    document.getElementById("banner").innerHTML = html ? '<div class="banner">' + html + '</div>' : "";
+  }
+
+  function api(params) {
+    var qs = new URLSearchParams(Object.assign({ senha: SENHA }, params));
+    return fetch(WEBAPP_URL + '?' + qs.toString()).then(function (r) { return r.json(); });
+  }
+
+  // ---------- rendering ----------
+
+  function renderTabs() {
+    var counts = { todos: state.devices.length, preparacao: 0, disponivel: 0, vendido: 0 };
+    state.devices.forEach(function (d) { counts[normalizeStatus(d.status)]++; });
+    var defs = [["disponivel", "Disponível"], ["preparacao", "Em preparação"], ["vendido", "Vendido"], ["todos", "Todos"]];
+    document.getElementById("tabs").innerHTML = defs.map(function (t) {
+      var active = state.filterStatus === t[0] ? " active" : "";
+      return '<button class="tab' + active + '" data-tab="' + t[0] + '">' + escapeHtml(t[1]) + ' <span class="n">' + counts[t[0]] + "</span></button>";
+    }).join("");
+  }
+
+  function filteredDevices() {
+    var q = state.search.trim().toLowerCase();
+    return state.devices.filter(function (d) {
+      if (state.filterStatus !== "todos" && normalizeStatus(d.status) !== state.filterStatus) return false;
+      if (!q) return true;
+      var hay = [d.modelo, d.processador, d.numeroSerie, d.armazenamento, d.ram].join(" ").toLowerCase();
+      return hay.indexOf(q) !== -1;
+    }).sort(function (a, b) { return (Number(b.criadoEm) || 0) - (Number(a.criadoEm) || 0); });
+  }
+
+  function renderList() {
+    var list = filteredDevices();
+    var el = document.getElementById("list");
+    var empty = document.getElementById("emptyState");
+
+    if (!state.devices.length) {
+      el.innerHTML = "";
+      document.getElementById("emptyText").textContent = "Nenhum aparelho cadastrado ainda.";
+      empty.hidden = false;
+      return;
+    }
+    if (!list.length) {
+      el.innerHTML = "";
+      document.getElementById("emptyText").textContent = "Nenhum aparelho encontrado com esse filtro.";
+      empty.hidden = false;
+      return;
+    }
+    empty.hidden = true;
+    el.innerHTML = list.map(renderDevice).join("");
+  }
+
+  function renderDevice(d) {
+    var status = normalizeStatus(d.status);
+    var chips = [d.tipo, d.condicao, d.processador, d.ram, d.armazenamento, d.gpu]
+      .filter(Boolean).map(function (c) { return '<span class="chip">' + escapeHtml(c) + "</span>"; }).join("");
+
+    var meta = "Entrada em " + fmtDate(d.dataEntrada);
+    if (status === "vendido" && d.dataVenda) meta += " · Vendido em " + fmtDate(d.dataVenda);
+    if (d.numeroSerie) meta += " · Série " + escapeHtml(d.numeroSerie);
+
+    var moveBtns = "";
+    if (status === "preparacao") {
+      moveBtns = '<button class="btn btn-secundario btn-sm" data-act="to-disponivel" data-id="' + d.id + '">Marcar como disponível</button>';
+    } else if (status === "disponivel") {
+      moveBtns =
+        '<button class="btn btn-secundario btn-sm" data-act="to-vendido" data-id="' + d.id + '">Marcar como vendido</button>' +
+        '<button class="btn btn-ghost btn-sm" data-act="to-preparacao" data-id="' + d.id + '">Voltar p/ preparação</button>';
+    } else {
+      moveBtns = '<button class="btn btn-secundario btn-sm" data-act="to-disponivel" data-id="' + d.id + '">Reverter p/ disponível</button>';
+    }
+
+    return (
+      '<div class="device">' +
+      '<div class="device-top">' +
+      "<div><div class=\"device-model\">" + escapeHtml(d.modelo || "(sem modelo)") + "</div>" +
+      '<div class="device-sub">' + meta + "</div></div>" +
+      '<span class="badge badge-' + status + '">' + escapeHtml(STATUS_LABEL[status] || status) + "</span>" +
+      "</div>" +
+      (chips ? '<div class="chips">' + chips + "</div>" : "") +
+      '<div class="preco"><div class="k">Preço</div><div class="v">' + fmtMoney.format(Number(d.venda) || 0) + "</div></div>" +
+      (d.observacoes ? '<div class="obs">' + escapeHtml(d.observacoes) + "</div>" : "") +
+      '<div class="device-actions">' + moveBtns + "</div>" +
+      "</div>"
+    );
+  }
+
+  function renderAll() {
+    renderTabs();
+    renderList();
+  }
+
+  function setStatus(id, status, dataVenda, msg) {
+    api({ action: "estoque_status", id: id, status: status, dataVenda: dataVenda || "" }).then(function (res) {
+      if (!res.ok) { toast("Erro: " + (res.erro || "não foi possível atualizar.")); return; }
+      toast(msg);
+      loadDevices();
+    }).catch(function () { toast("Erro de conexão."); });
+  }
+
+  function loadDevices() {
+    var btn = document.getElementById("btnRefresh");
+    btn.textContent = "Atualizando…";
+    btn.disabled = true;
+    api({ action: "estoque_listar" }).then(function (res) {
+      if (!res.ok) {
+        setBanner('Erro ao carregar o estoque: ' + (res.erro || 'tente novamente.') + ' <button class="btn btn-ghost btn-sm" id="btnRetry" style="margin-left:8px">Tentar de novo</button>');
+        var retry = document.getElementById("btnRetry");
+        if (retry) retry.addEventListener("click", loadDevices);
+        return;
+      }
+      setBanner("");
+      // Mostra só modelo/specs/preço de venda — nunca exibe o campo "custo" que a API retorna.
+      state.devices = (res.devices || []).map(function (d) {
+        return { id: d.id, modelo: d.modelo, tipo: d.tipo, condicao: d.condicao, processador: d.processador,
+          ram: d.ram, armazenamento: d.armazenamento, gpu: d.gpu, numeroSerie: d.numeroSerie, observacoes: d.observacoes,
+          venda: d.venda, status: d.status, dataEntrada: d.dataEntrada, dataVenda: d.dataVenda, criadoEm: d.criadoEm };
+      });
+      state.loaded = true;
+      renderAll();
+    }).catch(function () {
+      setBanner('Erro de conexão ao carregar o estoque. <button class="btn btn-ghost btn-sm" id="btnRetry" style="margin-left:8px">Tentar de novo</button>');
+      var retry = document.getElementById("btnRetry");
+      if (retry) retry.addEventListener("click", loadDevices);
+    }).finally(function () {
+      btn.textContent = "Atualizar";
+      btn.disabled = false;
+    });
+  }
+
+  document.getElementById("btnRefresh").addEventListener("click", loadDevices);
+  document.getElementById("search").addEventListener("input", function (e) {
+    state.search = e.target.value;
+    renderList();
+  });
+  document.getElementById("tabs").addEventListener("click", function (e) {
+    var btn = e.target.closest("button[data-tab]");
+    if (!btn) return;
+    state.filterStatus = btn.getAttribute("data-tab");
+    renderTabs();
+    renderList();
+  });
+  document.getElementById("list").addEventListener("click", function (e) {
+    var btn = e.target.closest("button[data-act]");
+    if (!btn) return;
+    var act = btn.getAttribute("data-act");
+    var id = btn.getAttribute("data-id");
+    if (act === "to-preparacao") setStatus(id, "preparacao", "", "Voltou para preparação.");
+    else if (act === "to-disponivel") setStatus(id, "disponivel", "", "Marcado como disponível.");
+    else if (act === "to-vendido") setStatus(id, "vendido", todayISO(), "Marcado como vendido.");
+  });
+
+  loadDevices();
+})();
+</script>
+</body>
+</html>
