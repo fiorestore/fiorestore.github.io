@@ -69,6 +69,16 @@
 
   .toast { position:fixed; left:50%; bottom:20px; transform:translateX(-50%); background:var(--text); color:var(--bg); padding:10px 18px; border-radius:999px; font-size:13px; box-shadow:0 4px 14px rgba(0,0,0,.2); z-index:50; }
 
+  .wl-overlay { position:fixed; inset:0; background:rgba(0,0,0,.45); display:flex; align-items:center; justify-content:center; padding:16px; z-index:100; }
+  .wl-modal { background:var(--card); border-radius:14px; width:100%; max-width:560px; max-height:90vh; display:flex; flex-direction:column; padding:20px; box-shadow:0 10px 30px rgba(0,0,0,.25); }
+  .wl-modal h2 { margin:0 0 4px; font-size:16px; }
+  .wl-hint { color:var(--muted); font-size:12.5px; margin:0 0 10px; }
+  .wl-modal textarea { width:100%; flex:1; min-height:280px; padding:10px 12px; border:1px solid var(--border); border-radius:8px; font-size:13.5px; font-family:inherit; background:var(--bg); color:var(--text); resize:vertical; }
+  .wl-actions { display:flex; gap:8px; margin-top:12px; flex-wrap:wrap; }
+  .wl-actions .btn { flex:1 1 auto; text-align:center; text-decoration:none; }
+  .btn-whats { background:#1ea34c; color:#fff; }
+  .btn-whats:hover { background:#188a40; }
+
   [hidden] { display:none !important; }
 </style>
 </head>
@@ -89,12 +99,26 @@
   <div class="toolbar">
     <input type="search" id="search" placeholder="Buscar por modelo, processador ou série…">
     <button class="btn btn-ghost" id="btnRefresh">Atualizar</button>
+    <button class="btn btn-secundario" id="btnWhats">📲 Lista pro WhatsApp</button>
   </div>
 
   <div class="list" id="list"></div>
 
   <div class="empty" id="emptyState" hidden>
     <p id="emptyText">Nenhum aparelho cadastrado ainda.</p>
+  </div>
+</div>
+
+<div class="wl-overlay" id="wlOverlay" hidden>
+  <div class="wl-modal" role="dialog" aria-modal="true" aria-labelledby="wlTitulo">
+    <h2 id="wlTitulo">Lista de aparelhos para WhatsApp</h2>
+    <p class="wl-hint" id="wlHint"></p>
+    <textarea id="wlTexto"></textarea>
+    <div class="wl-actions">
+      <button class="btn btn-secundario" id="wlCopiar" type="button">Copiar mensagem</button>
+      <a class="btn btn-whats" id="wlWhats" href="#" target="_blank" rel="noopener">Enviar pelo WhatsApp</a>
+      <button class="btn btn-ghost" id="wlFechar" type="button">Fechar</button>
+    </div>
   </div>
 </div>
 
@@ -295,6 +319,56 @@
     if (act === "to-preparacao") setStatus(id, "preparacao", "", "Voltou para preparação.");
     else if (act === "to-disponivel") setStatus(id, "disponivel", "", "Marcado como disponível.");
     else if (act === "to-vendido") setStatus(id, "vendido", todayISO(), "Marcado como vendido.");
+  });
+
+
+  // ---------- lista pro WhatsApp (só modelo, specs e preço de venda; nunca custo) ----------
+
+  function montarListaWhats() {
+    var disp = state.devices.filter(function (d) { return d.status === "disponivel"; })
+      .sort(function (a, b) { return (Number(a.venda) || 0) - (Number(b.venda) || 0); });
+    if (!disp.length) return "";
+    var linhas = ["*FIORE STORE - Notebooks disponíveis* 💻", ""];
+    disp.forEach(function (d, i) {
+      var specs = [d.condicao, d.processador, d.ram, d.armazenamento, d.gpu].filter(Boolean).join(" • ");
+      linhas.push("*" + (i + 1) + ") " + (d.modelo || "Aparelho") + "*");
+      if (specs) linhas.push(specs);
+      linhas.push("💰 " + fmtMoney.format(Number(d.venda) || 0));
+      linhas.push("");
+    });
+    linhas.push("Gostou de algum? Chama a gente pra reservar! 📲");
+    return linhas.join("\n");
+  }
+
+  function atualizarLinkWhats() {
+    var texto = document.getElementById("wlTexto").value;
+    var link = document.getElementById("wlWhats");
+    var hint = document.getElementById("wlHint");
+    var url = "https://wa.me/?text=" + encodeURIComponent(texto);
+    if (url.length <= 1900) {
+      link.href = url;
+      link.hidden = false;
+      hint.textContent = "Você pode editar o texto antes de enviar.";
+    } else {
+      link.hidden = true;
+      hint.textContent = "A lista é grande demais para abrir direto no WhatsApp: toque em Copiar mensagem e cole na conversa. Você pode editar o texto antes.";
+    }
+  }
+
+  document.getElementById("btnWhats").addEventListener("click", function () {
+    var texto = montarListaWhats();
+    if (!texto) { toast("Nenhum aparelho disponível no momento."); return; }
+    document.getElementById("wlTexto").value = texto;
+    atualizarLinkWhats();
+    document.getElementById("wlOverlay").hidden = false;
+  });
+  document.getElementById("wlTexto").addEventListener("input", atualizarLinkWhats);
+  document.getElementById("wlFechar").addEventListener("click", function () { document.getElementById("wlOverlay").hidden = true; });
+  document.getElementById("wlOverlay").addEventListener("click", function (e) { if (e.target === this) this.hidden = true; });
+  document.getElementById("wlCopiar").addEventListener("click", function () {
+    var ta = document.getElementById("wlTexto");
+    navigator.clipboard.writeText(ta.value).then(function () { toast("Mensagem copiada."); })
+      .catch(function () { ta.select(); toast("Selecione o texto e copie manualmente."); });
   });
 
   loadDevices();
