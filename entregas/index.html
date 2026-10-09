@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Entregas · Fiore Store</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="header">
+  <h1>Fiore Store</h1>
+</header>
+
+<a class="voltar" id="backlink" href="https://fiorestore.github.io/">« voltar ao painel</a>
+
+<main class="wrap">
+  <h2 class="titulo">Dados para entrega</h2>
+  <p class="aviso-campos">Campos marcados com <span class="obrigatorio">*</span> são obrigatórios.</p>
+
+  <!-- Mensagens de carregamento / erro / sucesso, lidas por leitores de tela -->
+  <div id="statusRegion" class="status-region" role="status" aria-live="polite"></div>
+  <div id="erroRegion" class="status-region" role="alert" aria-live="assertive"></div>
+
+  <!-- ===== SEÇÃO 1: FORMULÁRIO ===== -->
+  <section id="secaoFormulario" class="card">
+    <form id="formEntrega" novalidate>
+
+      <div class="campo">
+        <label for="nome">Nome completo <span class="obrigatorio">*</span></label>
+        <input type="text" id="nome" name="nome" autocomplete="name" aria-describedby="erro-nome" aria-required="true">
+        <p class="erro-campo" id="erro-nome"></p>
+      </div>
+
+      <div class="campo">
+        <label for="telefone">Telefone / WhatsApp <span class="obrigatorio">*</span></label>
+        <input type="tel" id="telefone" name="telefone" inputmode="numeric" autocomplete="tel" placeholder="(19) 99999-9999" aria-describedby="erro-telefone" aria-required="true">
+        <p class="erro-campo" id="erro-telefone"></p>
+      </div>
+
+      <div class="campo campo-cep">
+        <label for="cep">CEP <span class="obrigatorio">*</span></label>
+        <input type="text" id="cep" name="cep" inputmode="numeric" autocomplete="postal-code" placeholder="00000-000" maxlength="9" aria-describedby="erro-cep status-cep" aria-required="true">
+        <p class="status-cep" id="status-cep"></p>
+        <p class="erro-campo" id="erro-cep"></p>
+      </div>
+
+      <div class="campo">
+        <label for="rua">Rua <span class="obrigatorio">*</span></label>
+        <input type="text" id="rua" name="rua" autocomplete="address-line1" aria-describedby="erro-rua" aria-required="true">
+        <p class="erro-campo" id="erro-rua"></p>
+      </div>
+
+      <div class="linha">
+        <div class="campo">
+          <label for="numero">Número <span class="obrigatorio">*</span></label>
+          <input type="text" id="numero" name="numero" inputmode="numeric" autocomplete="address-line2" aria-describedby="erro-numero" aria-required="true">
+          <p class="erro-campo" id="erro-numero"></p>
+        </div>
+
+        <div class="campo">
+          <label for="complemento">Complemento</label>
+          <input type="text" id="complemento" name="complemento" placeholder="Apto, bloco, referência interna…" aria-describedby="erro-complemento">
+          <p class="erro-campo" id="erro-complemento"></p>
+        </div>
+      </div>
+
+      <div class="campo">
+        <label for="bairro">Bairro <span class="obrigatorio">*</span></label>
+        <input type="text" id="bairro" name="bairro" autocomplete="address-level3" aria-describedby="erro-bairro" aria-required="true">
+        <p class="erro-campo" id="erro-bairro"></p>
+      </div>
+
+      <div class="linha">
+        <div class="campo campo-cidade">
+          <label for="cidade">Cidade <span class="obrigatorio">*</span></label>
+          <input type="text" id="cidade" name="cidade" autocomplete="address-level2" aria-describedby="erro-cidade" aria-required="true">
+          <p class="erro-campo" id="erro-cidade"></p>
+        </div>
+
+        <div class="campo campo-estado">
+          <label for="estado">Estado <span class="obrigatorio">*</span></label>
+          <select id="estado" name="estado" autocomplete="address-level1" aria-describedby="erro-estado" aria-required="true">
+            <option value="">Selecione</option>
+            <option value="AC">AC</option><option value="AL">AL</option><option value="AP">AP</option><option value="AM">AM</option>
+            <option value="BA">BA</option><option value="CE">CE</option><option value="DF">DF</option><option value="ES">ES</option>
+            <option value="GO">GO</option><option value="MA">MA</option><option value="MT">MT</option><option value="MS">MS</option>
+            <option value="MG">MG</option><option value="PA">PA</option><option value="PB">PB</option><option value="PR">PR</option>
+            <option value="PE">PE</option><option value="PI">PI</option><option value="RJ">RJ</option><option value="RN">RN</option>
+            <option value="RS">RS</option><option value="RO">RO</option><option value="RR">RR</option><option value="SC">SC</option>
+            <option value="SP">SP</option><option value="SE">SE</option><option value="TO">TO</option>
+          </select>
+          <p class="erro-campo" id="erro-estado"></p>
+        </div>
+      </div>
+
+      <div class="campo">
+        <label for="referencia">Ponto de referência</label>
+        <input type="text" id="referencia" name="referencia" placeholder="Ex: Portão azul, perto da padaria" aria-describedby="erro-referencia">
+        <p class="erro-campo" id="erro-referencia"></p>
+      </div>
+
+      <div class="campo">
+        <label for="pedido">Número ou descrição do pedido</label>
+        <input type="text" id="pedido" name="pedido" placeholder="Ex: Pedido #123 — notebook Dell" aria-describedby="erro-pedido">
+        <p class="erro-campo" id="erro-pedido"></p>
+      </div>
+
+      <div class="campo">
+        <label for="observacoes">Observações para a entrega</label>
+        <textarea id="observacoes" name="observacoes" rows="3" placeholder="Ex: Entregar após as 18h, ligar antes de subir" aria-describedby="erro-observacoes"></textarea>
+        <p class="erro-campo" id="erro-observacoes"></p>
+      </div>
+
+      <button type="submit" id="btnRevisar" class="btn btn-principal">Revisar dados</button>
+    </form>
+  </section>
+
+  <!-- ===== SEÇÃO 2: CONFIRMAÇÃO ===== -->
+  <section id="secaoConfirmacao" class="card" hidden>
+    <h3 class="subtitulo-secao">Confirme os dados da entrega</h3>
+    <dl class="resumo" id="resumoConfirmacao"></dl>
+
+    <div class="campo campo-consentimento">
+      <label class="consentimento">
+        <input type="checkbox" id="consentimento" aria-describedby="erro-consentimento" aria-required="true">
+        <span>Autorizo o uso dos meus dados pela Fiore Store exclusivamente para preparar e realizar esta entrega.</span>
+      </label>
+      <p class="erro-campo" id="erro-consentimento"></p>
+    </div>
+
+    <p class="aviso-privacidade">Seus dados serão utilizados somente para atendimento e entrega do pedido.</p>
+
+    <div class="acoes-confirmacao">
+      <button type="button" id="btnCorrigir" class="btn btn-secundario">Corrigir dados</button>
+      <button type="button" id="btnConfirmar" class="btn btn-principal">Confirmar entrega</button>
+    </div>
+  </section>
+
+  <!-- ===== SEÇÃO 3: RESULTADO ===== -->
+  <section id="secaoResultado" class="card" hidden>
+    <h3 class="subtitulo-secao">Entrega pronta para despacho</h3>
+    <pre class="cartao-entrega" id="cartaoEntrega"></pre>
+
+    <div class="acoes-resultado">
+      <button type="button" id="btnCopiar" class="btn btn-secundario">📋 Copiar dados da entrega</button>
+      <a href="#" target="_blank" rel="noopener" id="linkMaps" class="btn btn-secundario">🗺️ Abrir no Google Maps</a>
+      <a href="#" target="_blank" rel="noopener" id="linkWaze" class="btn btn-secundario">🚗 Abrir no Waze</a>
+      <a href="#" target="_blank" rel="noopener" id="linkWhats" class="btn btn-whats">📲 Enviar pelo WhatsApp</a>
+      <button type="button" id="btnNova" class="btn btn-ghost">+ Cadastrar nova entrega</button>
+    </div>
+  </section>
+
+  <p class="rodape">Uso interno Fiore Store</p>
+</main>
+
+<script src="script.js"></script>
+</body>
+</html>
