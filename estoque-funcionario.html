@@ -79,6 +79,7 @@
   .btn-whats { background:#1ea34c; color:#fff; }
   .btn-whats:hover { background:#188a40; }
 
+  .toolbar select { padding:10px 12px; border:1px solid var(--border); border-radius:8px; font-size:14px; background:var(--card); color:var(--text); font-family:inherit; }
   [hidden] { display:none !important; }
 </style>
 </head>
@@ -98,6 +99,8 @@
 
   <div class="toolbar">
     <input type="search" id="search" placeholder="Buscar por modelo, processador ou série…">
+    <select id="filtroTipo" aria-label="Tipo"><option value="">Notebook e MacBook</option><option value="notebook">Só Notebook</option><option value="macbook">Só MacBook</option></select>
+    <select id="ordem" aria-label="Ordenar"><option value="recentes">Mais recentes</option><option value="menor">Menor preço</option><option value="maior">Maior preço</option></select>
     <button class="btn btn-ghost" id="btnRefresh">Atualizar</button>
     <button class="btn btn-secundario" id="btnWhats">📲 Lista pro WhatsApp</button>
   </div>
@@ -133,6 +136,8 @@
     devices: [],
     loaded: false,
     search: "",
+    tipo: "",
+    ordem: "recentes",
     filterStatus: "disponivel"
   };
 
@@ -194,10 +199,19 @@
     var q = state.search.trim().toLowerCase();
     return state.devices.filter(function (d) {
       if (state.filterStatus !== "todos" && normalizeStatus(d.status) !== state.filterStatus) return false;
+      if (state.tipo) {
+        var ehMac = /macbook/i.test(String(d.tipo || "") + " " + String(d.modelo || ""));
+        if ((state.tipo === "macbook") !== ehMac) return false;
+      }
       if (!q) return true;
       var hay = [d.modelo, d.processador, d.numeroSerie, d.armazenamento, d.ram].join(" ").toLowerCase();
       return hay.indexOf(q) !== -1;
-    }).sort(function (a, b) { return (Number(b.criadoEm) || 0) - (Number(a.criadoEm) || 0); });
+    }).sort(function (a, b) {
+      var pa = Number(a.venda) || 0, pb = Number(b.venda) || 0;
+      if (state.ordem === "menor") return (pa || Infinity) - (pb || Infinity) || 0;
+      if (state.ordem === "maior") return pb - pa;
+      return (Number(b.criadoEm) || 0) - (Number(a.criadoEm) || 0);
+    });
   }
 
   function renderList() {
@@ -300,6 +314,8 @@
   }
 
   document.getElementById("btnRefresh").addEventListener("click", loadDevices);
+  document.getElementById("filtroTipo").addEventListener("change", function (e) { state.tipo = e.target.value; renderList(); });
+  document.getElementById("ordem").addEventListener("change", function (e) { state.ordem = e.target.value; renderList(); });
   document.getElementById("search").addEventListener("input", function (e) {
     state.search = e.target.value;
     renderList();
