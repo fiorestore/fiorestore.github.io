@@ -15,22 +15,31 @@
 <a class="voltar" id="backlink" href="https://fiorestore.github.io/">« voltar ao painel</a>
 
 <main class="wrap">
-  <h2 class="titulo">Dados para entrega</h2>
-  <p class="aviso-campos">Campos marcados com <span class="obrigatorio">*</span> são obrigatórios.</p>
+  <h2 class="titulo">Entregas</h2>
 
   <!-- Mensagens de carregamento / erro / sucesso, lidas por leitores de tela -->
   <div id="statusRegion" class="status-region" role="status" aria-live="polite"></div>
   <div id="erroRegion" class="status-region" role="alert" aria-live="assertive"></div>
 
   <!-- ===== ENTREGAS AGUARDANDO DESPACHO (marcadas no contrato) ===== -->
-  <section id="secaoPendentes" class="card" hidden>
-    <h3 class="subtitulo-secao">🚚 Aguardando despacho</h3>
-    <p class="aviso-privacidade" id="pendentesHint">Entregas marcadas na hora do contrato. Toque em "Preencher" para montar a mensagem do motoboy.</p>
+  <section id="secaoPendentes" class="card">
+    <div class="titulo-linha">
+      <h3 class="subtitulo-secao">🚚 Para despachar</h3>
+      <button type="button" id="btnAtualizar" class="btn btn-ghost btn-mini">↻ Atualizar</button>
+    </div>
+    <div class="campo campo-motoboy">
+      <label for="motoboy">WhatsApp do motoboy <span class="opcional">(fica salvo neste aparelho)</span></label>
+      <input type="tel" id="motoboy" inputmode="numeric" placeholder="(19) 99999-9999" autocomplete="off">
+    </div>
     <div id="listaPendentes"></div>
+    <p class="aviso-privacidade" id="semPendentes" hidden>Nenhuma entrega aguardando. Quando uma nota for marcada como entrega e o cliente preencher os dados, ela aparece aqui já pronta pra enviar.</p>
   </section>
 
+  <button type="button" id="btnManual" class="btn btn-ghost">➕ Entrega sem contrato (digitar manualmente)</button>
+
   <!-- ===== SEÇÃO 1: FORMULÁRIO ===== -->
-  <section id="secaoFormulario" class="card">
+  <section id="secaoFormulario" class="card" hidden>
+    <p class="aviso-campos">Campos marcados com <span class="obrigatorio">*</span> são obrigatórios.</p>
     <form id="formEntrega" novalidate>
 
       <div class="campo">

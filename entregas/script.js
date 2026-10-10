@@ -1,8 +1,9 @@
 // Fiore Store — Entregas
-// Vanilla JS, sem frameworks. O formulário em si não salva nada (sem localStorage):
-// fecha a aba, perde os dados. Chamadas de rede: ViaCEP (consulta de endereço) e o
-// backend da loja (Apps Script), só para listar as entregas marcadas no contrato e
-// marcá-las como despachadas.
+// Vanilla JS, sem frameworks. Fluxo principal: as entregas marcadas no contrato
+// aparecem prontas para enviar ao motoboy pelo WhatsApp. O formulário manual não
+// salva nada. Único dado guardado no aparelho: o WhatsApp do motoboy (localStorage).
+// Rede: ViaCEP (bairro/endereço) e o backend da loja (Apps Script) para listar as
+// entregas marcadas no contrato e marcá-las como enviadas.
 
 (function () {
   "use strict";
@@ -25,7 +26,6 @@
 
   var WEBAPP_URL = "https://script.google.com/macros/s/AKfycbw22fQo18s_OSnF8zBUGagKBoAk-5b0bymc2XCPcusiaE-IRb2nFfyZsB31ywvqeV5RBA/exec";
   var SENHA = "TROQUE_PARA_UMA_SENHA_SUA";
-  var entregaAtualId = null;
 
   function api(params) {
     var qs = new URLSearchParams(Object.assign({ senha: SENHA }, params));
@@ -346,13 +346,6 @@
   // ---------- seção 3: resultado ----------
 
   function gerarResultado(d) {
-    if (entregaAtualId) {
-      var idDespachada = entregaAtualId;
-      entregaAtualId = null;
-      api({ action: "entrega_status", id: idDespachada, status: "despachada" })
-        .then(carregarPendentes)
-        .catch(function () { /* se falhar, a entrega continua na lista e pode ser marcada manualmente */ });
-    }
     var mensagem = montarMensagem(d);
     document.getElementById("cartaoEntrega").textContent = mensagem;
 
@@ -387,7 +380,6 @@
     statusCepEl.textContent = "";
     statusCepEl.className = "status-cep";
     dadosAtuais = null;
-    entregaAtualId = null;
 
     secaoResultado.hidden = true;
     secaoConfirmacao.hidden = true;
@@ -396,61 +388,80 @@
     document.getElementById("nome").focus();
   });
 
-  // ---------- entregas marcadas no contrato ----------
+  // ---------- entregas marcadas no contrato: mensagem pronta pro motoboy ----------
 
-  function separarEndereco(txt) {
-    var t = String(txt || "").trim();
-    var m = t.match(/^(.*?)[,\s]+(\d+[A-Za-z]?)\s*$/);
-    return m ? { rua: m[1].trim(), numero: m[2] } : { rua: t, numero: "" };
-  }
+  var CHAVE_MOTOBOY = "fiore_motoboy_whats";
+  var motoboyEl = document.getElementById("motoboy");
+  var cartoes = [];
+  var bairroPorCep = {};
 
-  function separarCidade(txt) {
-    var t = String(txt || "").trim();
-    var m = t.match(/^(.*?)\s*[-\/,]\s*([A-Za-z]{2})$/);
-    return m ? { cidade: m[1].trim(), estado: m[2].toUpperCase() } : { cidade: t, estado: "" };
-  }
+  try { motoboyEl.value = localStorage.getItem(CHAVE_MOTOBOY) || ""; } catch (err) { /* sem armazenamento: só não lembra o número */ }
 
-  function normalizarTelefone(v) {
+  function cepDigitos(v) {
     var d = String(v || "").replace(/\D/g, "");
-    if (d.length > 11 && d.indexOf("55") === 0) d = d.slice(2);
-    return maskTelefone(d);
+    return d.length === 7 ? "0" + d : d;
   }
 
-  function normalizarCep(v) {
-    var d = String(v || "").replace(/\D/g, "");
-    if (d.length === 7) d = "0" + d;
-    return d;
+  function mensagemEntrega(e) {
+    var linhas = [
+      "NOVA ENTREGA - FIORE STORE",
+      "",
+      "Cliente: " + (e.nome || ""),
+      "Telefone: " + (e.telefone || ""),
+      "Pedido: " + (e.produto || "—"),
+      "Endereço: " + (e.endereco || "")
+    ];
+    if (e.complemento) linhas.push("Complemento: " + e.complemento);
+    var bairro = bairroPorCep[cepDigitos(e.cep)];
+    if (bairro) linhas.push("Bairro: " + bairro);
+    linhas.push("Cidade: " + (e.cidade || ""));
+    var cep = cepDigitos(e.cep);
+    if (cep) linhas.push("CEP: " + maskCep(cep));
+    return linhas.join("\n");
   }
 
-  function preencherComEntrega(e) {
-    var end = separarEndereco(e.endereco);
-    var cid = separarCidade(e.cidade);
-    var cep = normalizarCep(e.cep);
-    var valores = {
-      nome: e.nome, telefone: normalizarTelefone(e.telefone), cep: maskCep(cep),
-      rua: end.rua, numero: end.numero, complemento: e.complemento,
-      bairro: "", cidade: cid.cidade, estado: cid.estado,
-      referencia: "", pedido: e.produto, observacoes: ""
-    };
-    Object.keys(valores).forEach(function (id) {
-      document.getElementById(id).value = valores[id] || "";
+  function linkWhatsMotoboy(texto) {
+    var num = motoboyEl.value.replace(/\D/g, "");
+    if (num && num.length <= 11) num = "55" + num;
+    return "https://wa.me/" + num + "?text=" + encodeURIComponent(texto);
+  }
+
+  function atualizarCartoes() {
+    cartoes.forEach(function (c) {
+      var texto = mensagemEntrega(c.e);
+      c.pre.textContent = texto;
+      c.whats.href = linkWhatsMotoboy(texto);
+      c.texto = texto;
     });
-    TODOS_CAMPOS.forEach(limparErroCampo);
-    entregaAtualId = e.id;
+  }
 
-    secaoResultado.hidden = true;
-    secaoConfirmacao.hidden = true;
-    secaoFormulario.hidden = false;
-    secaoFormulario.scrollIntoView({ behavior: "smooth", block: "start" });
-    anunciarStatus("Dados de " + e.nome + " preenchidos a partir do contrato. Confira o número, o bairro e o ponto de referência antes de enviar.");
-    if (cep.length === 8) buscarCep(cep, true);
+  motoboyEl.addEventListener("input", function () {
+    motoboyEl.value = maskTelefone(motoboyEl.value);
+    try { localStorage.setItem(CHAVE_MOTOBOY, motoboyEl.value); } catch (err) { /* ignora */ }
+    atualizarCartoes();
+  });
+
+  function buscarBairro(cep) {
+    if (cep.length !== 8 || Object.prototype.hasOwnProperty.call(bairroPorCep, cep)) return;
+    bairroPorCep[cep] = "";
+    fetch("https://viacep.com.br/ws/" + cep + "/json/")
+      .then(function (r) { return r.json(); })
+      .then(function (d) { if (!d.erro && d.bairro) { bairroPorCep[cep] = d.bairro; atualizarCartoes(); } })
+      .catch(function () { /* sem bairro: a mensagem segue sem essa linha */ });
+  }
+
+  function marcarEnviada(id) {
+    return api({ action: "entrega_status", id: id, status: "despachada" })
+      .then(carregarPendentes)
+      .catch(function () { anunciarErro("Não foi possível atualizar agora. Tente de novo."); });
   }
 
   function renderPendentes(lista) {
-    var secao = document.getElementById("secaoPendentes");
     var alvo = document.getElementById("listaPendentes");
     alvo.innerHTML = "";
-    if (!lista.length) { secao.hidden = true; return; }
+    cartoes = [];
+    document.getElementById("semPendentes").hidden = lista.length > 0;
+
     lista.forEach(function (e) {
       var card = document.createElement("div");
       card.className = "pendente";
@@ -459,48 +470,78 @@
       nome.className = "pendente-nome";
       nome.textContent = e.nome || "(sem nome)";
 
-      var sub = document.createElement("div");
-      sub.className = "pendente-sub";
-      sub.textContent = [e.produto, e.telefone, e.endereco, e.cidade].filter(Boolean).join(" · ");
+      var pre = document.createElement("pre");
+      pre.className = "pendente-msg";
 
       var acoes = document.createElement("div");
       acoes.className = "pendente-acoes";
 
-      var btnUsar = document.createElement("button");
-      btnUsar.type = "button";
-      btnUsar.className = "btn btn-principal";
-      btnUsar.textContent = "Preencher";
-      btnUsar.addEventListener("click", function () { preencherComEntrega(e); });
+      var whats = document.createElement("a");
+      whats.className = "btn btn-whats";
+      whats.target = "_blank";
+      whats.rel = "noopener";
+      whats.textContent = "📲 Enviar no WhatsApp";
 
-      var btnFechar = document.createElement("button");
-      btnFechar.type = "button";
-      btnFechar.className = "btn btn-ghost";
-      btnFechar.textContent = "Já resolvida";
-      btnFechar.addEventListener("click", function () {
-        if (!window.confirm("Marcar a entrega de " + (e.nome || "este cliente") + " como resolvida? Ela sai desta lista.")) return;
-        api({ action: "entrega_status", id: e.id, status: "despachada" })
-          .then(carregarPendentes)
-          .catch(function () { anunciarErro("Não foi possível atualizar agora. Tente de novo."); });
+      var btnCopiar = document.createElement("button");
+      btnCopiar.type = "button";
+      btnCopiar.className = "btn btn-secundario";
+      btnCopiar.textContent = "📋 Copiar";
+
+      var btnEnviei = document.createElement("button");
+      btnEnviei.type = "button";
+      btnEnviei.className = "btn btn-ghost";
+      btnEnviei.textContent = "✓ Já enviei";
+
+      var cartao = { e: e, pre: pre, whats: whats, texto: "" };
+      whats.addEventListener("click", function () { btnEnviei.className = "btn btn-principal"; });
+      btnCopiar.addEventListener("click", function () {
+        navigator.clipboard.writeText(cartao.texto).then(function () {
+          btnCopiar.textContent = "✅ Copiado!";
+          setTimeout(function () { btnCopiar.textContent = "📋 Copiar"; }, 1800);
+        }).catch(function () { anunciarErro("Não foi possível copiar. Use o botão do WhatsApp."); });
+      });
+      btnEnviei.addEventListener("click", function () {
+        if (!window.confirm("Tirar a entrega de " + (e.nome || "este cliente") + " da lista?")) return;
+        marcarEnviada(e.id);
       });
 
-      acoes.appendChild(btnUsar);
-      acoes.appendChild(btnFechar);
+      acoes.appendChild(whats);
+      acoes.appendChild(btnCopiar);
+      acoes.appendChild(btnEnviei);
       card.appendChild(nome);
-      card.appendChild(sub);
+      card.appendChild(pre);
       card.appendChild(acoes);
       alvo.appendChild(card);
+
+      cartoes.push(cartao);
+      buscarBairro(cepDigitos(e.cep));
     });
-    secao.hidden = false;
+    atualizarCartoes();
   }
 
   function carregarPendentes() {
+    var btn = document.getElementById("btnAtualizar");
+    btn.disabled = true;
     return api({ action: "entregas_listar" }).then(function (res) {
-      if (!res.ok) return;
+      if (!res.ok) throw new Error("falha");
       var pendentes = (res.entregas || []).filter(function (e) { return e.status === "pendente"; })
         .sort(function (a, b) { return (Number(b.criadoEm) || 0) - (Number(a.criadoEm) || 0); });
       renderPendentes(pendentes);
-    }).catch(function () { /* sem conexão com o backend: o formulário manual continua funcionando */ });
+    }).catch(function () {
+      anunciarErro("Não foi possível carregar as entregas agora. Toque em Atualizar.");
+    }).then(function () { btn.disabled = false; });
   }
+
+  document.getElementById("btnAtualizar").addEventListener("click", function () { limparAnuncios(); carregarPendentes(); });
+  document.addEventListener("visibilitychange", function () { if (!document.hidden) carregarPendentes(); });
+
+  document.getElementById("btnManual").addEventListener("click", function () {
+    secaoFormulario.hidden = !secaoFormulario.hidden;
+    if (!secaoFormulario.hidden) {
+      secaoFormulario.scrollIntoView({ behavior: "smooth", block: "start" });
+      document.getElementById("nome").focus();
+    }
+  });
 
   carregarPendentes();
 })();
