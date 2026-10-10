@@ -42,6 +42,9 @@
   .link-box button { width:auto; margin:0; padding:10px 14px; white-space:nowrap; }
   .voltar { display:inline-block; margin-top:16px; color:var(--muted); font-size:13px; text-decoration:none; text-align:center; width:100%; }
   .rodape { text-align:center; color:var(--muted); font-size:12px; margin-top:24px; }
+  .check-entrega { display:flex; align-items:center; gap:10px; margin:16px 0 0; padding:12px 14px; background:var(--brand-tint); border-radius:10px; font-size:14px; font-weight:600; cursor:pointer; }
+  .check-entrega input { width:auto; margin:0; flex:none; }
+  .check-entrega small { display:block; font-weight:400; color:var(--muted); font-size:12px; margin-top:2px; }
   [hidden] { display:none !important; }
 
   .home-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:12px; margin-top:4px; }
@@ -113,6 +116,7 @@
 
       <label>Data da venda</label>
       <input type="date" id="data">
+      <label class="check-entrega"><input type="checkbox" id="entrega"><span>🚚 Entrega ao cliente (motoboy)<small>Desmarcado = o cliente retira na loja</small></span></label>
 
       <button class="btn-principal" id="btnGerarLink">Gerar link para o cliente</button>
       <button class="btn-secundario" id="btnPreencherEuMesmo">Preencher os dados do cliente eu mesmo</button>
@@ -314,7 +318,8 @@
       '<b>Condição:</b> ' + dadosVenda.condicao + '<br>' +
       '<b>Valor:</b> R$ ' + dadosVenda.valor + '<br>' +
       '<b>Forma de pagamento:</b> ' + dadosVenda.formaPagamento + '<br>' +
-      '<b>Data da venda:</b> ' + formatarDataExibicao(dadosVenda.data);
+      '<b>Data da venda:</b> ' + formatarDataExibicao(dadosVenda.data) + '<br>' +
+      '<b>Recebimento:</b> ' + (dadosVenda.entrega === '1' ? 'Entrega no endereço informado' : 'Retirada na loja');
   }
 
   function dadosEtapa1() {
@@ -324,7 +329,8 @@
       valor: document.getElementById('valor').value.trim(),
       formaPagamento: document.getElementById('formaPagamento').value.trim(),
       data: document.getElementById('data').value,
-      aparelhoEstoqueId: aparelhoEstoqueSelecionadoId
+      aparelhoEstoqueId: aparelhoEstoqueSelecionadoId,
+      entrega: document.getElementById('entrega').checked ? '1' : ''
     };
   }
 
@@ -339,7 +345,9 @@
   document.getElementById('btnGerarLink').addEventListener('click', function () {
     const d = dadosEtapa1();
     if (!validarEtapa1(d)) return;
-    const qs = new URLSearchParams(d).toString();
+    const dLink = Object.assign({}, d);
+    if (!dLink.entrega) delete dLink.entrega;
+    const qs = new URLSearchParams(dLink).toString();
     const link = 'https://fiorestore.github.io/?' + qs;
     document.getElementById('linkGerado').innerHTML =
       '<label>Link para enviar ao cliente</label>' +
@@ -455,6 +463,29 @@
         data: dadosVenda.data
       });
       fetch(WEBAPP_URL + '?' + qsCliente.toString()).catch(function () { /* contrato já foi gerado; cadastro do cliente pode ser feito manualmente se isso falhar */ });
+
+      if (dadosVenda.entrega === '1') {
+        try {
+          const qsEntrega = new URLSearchParams({
+            senha: SENHA,
+            action: 'entrega_registrar',
+            nome: nome,
+            telefone: telefone,
+            cep: cep,
+            endereco: endereco,
+            complemento: complemento,
+            cidade: cidade,
+            produto: dadosVenda.produto,
+            valor: dadosVenda.valor
+          });
+          const respEntrega = await fetch(WEBAPP_URL + '?' + qsEntrega.toString());
+          const dadosEntrega = await respEntrega.json();
+          if (!dadosEntrega.ok) throw new Error(dadosEntrega.erro || 'falha');
+          document.getElementById('resultado').insertAdjacentHTML('beforeend', '<div class="msg-ok" style="margin-top:10px">🚚 Entrega registrada! A Fiore Store vai combinar o envio com você.</div>');
+        } catch (errEntrega) {
+          document.getElementById('resultado').insertAdjacentHTML('beforeend', '<div class="msg-erro" style="margin-top:10px">Não foi possível registrar a entrega automaticamente. Avise a Fiore Store para combinar o envio.</div>');
+        }
+      }
     } catch (err) {
       document.getElementById('resultado').innerHTML = '<div class="msg-erro">Erro de conexão: ' + err.message + '</div>';
     } finally {
