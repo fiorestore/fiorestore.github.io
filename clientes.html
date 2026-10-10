@@ -186,7 +186,8 @@
   var WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbw22fQo18s_OSnF8zBUGagKBoAk-5b0bymc2XCPcusiaE-IRb2nFfyZsB31ywvqeV5RBA/exec';
   var SENHA = 'TROQUE_PARA_UMA_SENHA_SUA';
 
-  if (new URLSearchParams(location.search).get('painel') === 'funcionario') {
+  var MODO_FUNCIONARIO = new URLSearchParams(location.search).get('painel') === 'funcionario';
+  if (MODO_FUNCIONARIO) {
     document.getElementById('backlink').href = 'https://fiorestore.github.io/painel-funcionario.html';
   }
 
@@ -269,6 +270,7 @@
       ["Compras registradas", String(s.totalCompras), ""],
       ["Total vendido (histórico)", fmtMoney.format(s.totalComprado), "success"]
     ];
+    if (MODO_FUNCIONARIO) tiles.pop();
     document.getElementById("stats").innerHTML = tiles.map(function (t) {
       return '<div class="stat"><div class="k">' + escapeHtml(t[0]) + '</div><div class="v ' + t[2] + '">' + escapeHtml(t[1]) + "</div></div>";
     }).join("");
@@ -441,13 +443,16 @@
     var list = filteredClientes();
     if (!list.length) { toast("Nenhum cliente para exportar."); return; }
     var header = ["Nome", "CPF", "Telefone", "Cidade", "Endereço", "CEP", "Complemento", "Qtd. compras", "Total comprado (R$)", "Cadastrado em", "Observações"];
+    if (MODO_FUNCIONARIO) header.splice(8, 1);
     var rows = list.map(function (c) {
       var compras = c.compras || [];
       var total = compras.reduce(function (s, cp) { return s + (Number(cp.valor) || 0); }, 0);
-      return [
+      var cols = [
         c.nome, c.cpf, c.telefone, c.cidade, c.endereco, cepTexto(c.cep), c.complemento,
         compras.length, total.toFixed(2).replace(".", ","), fmtDate(c.criadoEm), c.observacoes
-      ].map(csvEscape).join(";");
+      ];
+      if (MODO_FUNCIONARIO) cols.splice(8, 1);
+      return cols.map(csvEscape).join(";");
     });
     var csv = "﻿" + header.join(";") + "\n" + rows.join("\n");
     var blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
