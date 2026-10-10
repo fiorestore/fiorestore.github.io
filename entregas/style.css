@@ -232,6 +232,12 @@ input[aria-invalid="true"], select[aria-invalid="true"], textarea[aria-invalid="
   margin-top: 24px;
 }
 
+.pendente { border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; margin-top: 10px; }
+.pendente-nome { font-weight: 700; }
+.pendente-sub { color: var(--muted); font-size: 13px; margin-top: 2px; word-break: break-word; }
+.pendente-acoes { display: flex; gap: 8px; margin-top: 10px; }
+.pendente-acoes .btn { margin-top: 0; padding: 10px; font-size: 14px; }
+
 /* Visualmente oculto, mas lido por leitores de tela */
 .sr-only {
   position: absolute;

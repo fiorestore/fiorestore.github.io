@@ -1,7 +1,8 @@
 // Fiore Store — Entregas
-// Vanilla JS, sem frameworks. Nenhum dado é salvo (sem localStorage, sem backend
-// próprio) — tudo fica só na tela durante o atendimento. A única chamada de rede
-// é para a API pública ViaCEP (consulta de endereço, sem autenticação).
+// Vanilla JS, sem frameworks. O formulário em si não salva nada (sem localStorage):
+// fecha a aba, perde os dados. Chamadas de rede: ViaCEP (consulta de endereço) e o
+// backend da loja (Apps Script), só para listar as entregas marcadas no contrato e
+// marcá-las como despachadas.
 
 (function () {
   "use strict";
@@ -20,6 +21,15 @@
 
   if (new URLSearchParams(location.search).get("painel") === "funcionario") {
     document.getElementById("backlink").href = "https://fiorestore.github.io/painel-funcionario.html";
+  }
+
+  var WEBAPP_URL = "https://script.google.com/macros/s/AKfycbw22fQo18s_OSnF8zBUGagKBoAk-5b0bymc2XCPcusiaE-IRb2nFfyZsB31ywvqeV5RBA/exec";
+  var SENHA = "TROQUE_PARA_UMA_SENHA_SUA";
+  var entregaAtualId = null;
+
+  function api(params) {
+    var qs = new URLSearchParams(Object.assign({ senha: SENHA }, params));
+    return fetch(WEBAPP_URL + "?" + qs.toString()).then(function (r) { return r.json(); });
   }
 
   var enviando = false;
@@ -112,7 +122,7 @@
 
   // ---------- ViaCEP ----------
 
-  function buscarCep(digitosCep) {
+  function buscarCep(digitosCep, soVazios) {
     if (buscandoCep) return;
     buscandoCep = true;
 
@@ -130,16 +140,22 @@
           return;
         }
 
-        document.getElementById("rua").value = dados.logradouro || "";
-        document.getElementById("bairro").value = dados.bairro || "";
-        document.getElementById("cidade").value = dados.localidade || "";
-        document.getElementById("estado").value = dados.uf || "";
+        // soVazios: ao preencher a partir de uma entrega, não sobrescreve o que já veio do contrato
+        function preencher(id, valor) {
+          var el = document.getElementById(id);
+          if (!soVazios || !el.value.trim()) el.value = valor || "";
+        }
+        preencher("rua", dados.logradouro);
+        preencher("bairro", dados.bairro);
+        preencher("cidade", dados.localidade);
+        preencher("estado", dados.uf);
         ["rua", "bairro", "cidade", "estado"].forEach(limparErroCampo);
 
         statusCepEl.textContent = "Endereço encontrado e preenchido automaticamente.";
         statusCepEl.className = "status-cep encontrado";
         anunciarStatus("Endereço encontrado e preenchido automaticamente.");
 
+        if (soVazios) return;
         if (!dados.logradouro) {
           document.getElementById("rua").focus();
         } else {
@@ -330,6 +346,13 @@
   // ---------- seção 3: resultado ----------
 
   function gerarResultado(d) {
+    if (entregaAtualId) {
+      var idDespachada = entregaAtualId;
+      entregaAtualId = null;
+      api({ action: "entrega_status", id: idDespachada, status: "despachada" })
+        .then(carregarPendentes)
+        .catch(function () { /* se falhar, a entrega continua na lista e pode ser marcada manualmente */ });
+    }
     var mensagem = montarMensagem(d);
     document.getElementById("cartaoEntrega").textContent = mensagem;
 
@@ -364,6 +387,7 @@
     statusCepEl.textContent = "";
     statusCepEl.className = "status-cep";
     dadosAtuais = null;
+    entregaAtualId = null;
 
     secaoResultado.hidden = true;
     secaoConfirmacao.hidden = true;
@@ -371,4 +395,112 @@
     limparAnuncios();
     document.getElementById("nome").focus();
   });
+
+  // ---------- entregas marcadas no contrato ----------
+
+  function separarEndereco(txt) {
+    var t = String(txt || "").trim();
+    var m = t.match(/^(.*?)[,\s]+(\d+[A-Za-z]?)\s*$/);
+    return m ? { rua: m[1].trim(), numero: m[2] } : { rua: t, numero: "" };
+  }
+
+  function separarCidade(txt) {
+    var t = String(txt || "").trim();
+    var m = t.match(/^(.*?)\s*[-\/,]\s*([A-Za-z]{2})$/);
+    return m ? { cidade: m[1].trim(), estado: m[2].toUpperCase() } : { cidade: t, estado: "" };
+  }
+
+  function normalizarTelefone(v) {
+    var d = String(v || "").replace(/\D/g, "");
+    if (d.length > 11 && d.indexOf("55") === 0) d = d.slice(2);
+    return maskTelefone(d);
+  }
+
+  function normalizarCep(v) {
+    var d = String(v || "").replace(/\D/g, "");
+    if (d.length === 7) d = "0" + d;
+    return d;
+  }
+
+  function preencherComEntrega(e) {
+    var end = separarEndereco(e.endereco);
+    var cid = separarCidade(e.cidade);
+    var cep = normalizarCep(e.cep);
+    var valores = {
+      nome: e.nome, telefone: normalizarTelefone(e.telefone), cep: maskCep(cep),
+      rua: end.rua, numero: end.numero, complemento: e.complemento,
+      bairro: "", cidade: cid.cidade, estado: cid.estado,
+      referencia: "", pedido: e.produto, observacoes: ""
+    };
+    Object.keys(valores).forEach(function (id) {
+      document.getElementById(id).value = valores[id] || "";
+    });
+    TODOS_CAMPOS.forEach(limparErroCampo);
+    entregaAtualId = e.id;
+
+    secaoResultado.hidden = true;
+    secaoConfirmacao.hidden = true;
+    secaoFormulario.hidden = false;
+    secaoFormulario.scrollIntoView({ behavior: "smooth", block: "start" });
+    anunciarStatus("Dados de " + e.nome + " preenchidos a partir do contrato. Confira o número, o bairro e o ponto de referência antes de enviar.");
+    if (cep.length === 8) buscarCep(cep, true);
+  }
+
+  function renderPendentes(lista) {
+    var secao = document.getElementById("secaoPendentes");
+    var alvo = document.getElementById("listaPendentes");
+    alvo.innerHTML = "";
+    if (!lista.length) { secao.hidden = true; return; }
+    lista.forEach(function (e) {
+      var card = document.createElement("div");
+      card.className = "pendente";
+
+      var nome = document.createElement("div");
+      nome.className = "pendente-nome";
+      nome.textContent = e.nome || "(sem nome)";
+
+      var sub = document.createElement("div");
+      sub.className = "pendente-sub";
+      sub.textContent = [e.produto, e.telefone, e.endereco, e.cidade].filter(Boolean).join(" · ");
+
+      var acoes = document.createElement("div");
+      acoes.className = "pendente-acoes";
+
+      var btnUsar = document.createElement("button");
+      btnUsar.type = "button";
+      btnUsar.className = "btn btn-principal";
+      btnUsar.textContent = "Preencher";
+      btnUsar.addEventListener("click", function () { preencherComEntrega(e); });
+
+      var btnFechar = document.createElement("button");
+      btnFechar.type = "button";
+      btnFechar.className = "btn btn-ghost";
+      btnFechar.textContent = "Já resolvida";
+      btnFechar.addEventListener("click", function () {
+        if (!window.confirm("Marcar a entrega de " + (e.nome || "este cliente") + " como resolvida? Ela sai desta lista.")) return;
+        api({ action: "entrega_status", id: e.id, status: "despachada" })
+          .then(carregarPendentes)
+          .catch(function () { anunciarErro("Não foi possível atualizar agora. Tente de novo."); });
+      });
+
+      acoes.appendChild(btnUsar);
+      acoes.appendChild(btnFechar);
+      card.appendChild(nome);
+      card.appendChild(sub);
+      card.appendChild(acoes);
+      alvo.appendChild(card);
+    });
+    secao.hidden = false;
+  }
+
+  function carregarPendentes() {
+    return api({ action: "entregas_listar" }).then(function (res) {
+      if (!res.ok) return;
+      var pendentes = (res.entregas || []).filter(function (e) { return e.status === "pendente"; })
+        .sort(function (a, b) { return (Number(b.criadoEm) || 0) - (Number(a.criadoEm) || 0); });
+      renderPendentes(pendentes);
+    }).catch(function () { /* sem conexão com o backend: o formulário manual continua funcionando */ });
+  }
+
+  carregarPendentes();
 })();

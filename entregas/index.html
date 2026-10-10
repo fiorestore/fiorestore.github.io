@@ -22,6 +22,13 @@
   <div id="statusRegion" class="status-region" role="status" aria-live="polite"></div>
   <div id="erroRegion" class="status-region" role="alert" aria-live="assertive"></div>
 
+  <!-- ===== ENTREGAS AGUARDANDO DESPACHO (marcadas no contrato) ===== -->
+  <section id="secaoPendentes" class="card" hidden>
+    <h3 class="subtitulo-secao">🚚 Aguardando despacho</h3>
+    <p class="aviso-privacidade" id="pendentesHint">Entregas marcadas na hora do contrato. Toque em "Preencher" para montar a mensagem do motoboy.</p>
+    <div id="listaPendentes"></div>
+  </section>
+
   <!-- ===== SEÇÃO 1: FORMULÁRIO ===== -->
   <section id="secaoFormulario" class="card">
     <form id="formEntrega" novalidate>
