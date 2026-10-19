@@ -255,6 +255,21 @@
     return m;
   }
 
+  var SITE_BASE = "https://fiorestore.github.io/";
+  function linkAnuncio(id) { return SITE_BASE + "produto.html?id=" + encodeURIComponent(id); }
+
+  function linkBtns(d) {
+    var msg = "Olá! Segue o anúncio do " + (d.modelo || "aparelho") + " com fotos e detalhes: " + linkAnuncio(d.id);
+    return '<button class="btn btn-ghost btn-sm" data-act="copy-link" data-id="' + d.id + '">🔗 Copiar link</button>' +
+      '<a class="btn btn-ghost btn-sm" style="text-decoration:none" target="_blank" rel="noopener" href="https://wa.me/?text=' + encodeURIComponent(msg) + '">📲 Enviar link</a>';
+  }
+
+  function copiarLink(id) {
+    var url = linkAnuncio(id);
+    navigator.clipboard.writeText(url).then(function () { toast("Link do anúncio copiado."); })
+      .catch(function () { window.prompt("Copie o link do anúncio:", url); });
+  }
+
   function fotosHtml(d) {
     var fs = state.fotos[d.id];
     if (!fs || !fs.length) return "";
@@ -284,6 +299,7 @@
       moveBtns = '<button class="btn btn-secundario btn-sm" data-act="to-disponivel" data-id="' + d.id + '">Marcar como disponível</button>';
     } else if (status === "disponivel") {
       moveBtns =
+        linkBtns(d) +
         '<button class="btn btn-secundario btn-sm" data-act="to-vendido" data-id="' + d.id + '">Marcar como vendido</button>' +
         '<button class="btn btn-ghost btn-sm" data-act="to-preparacao" data-id="' + d.id + '">Voltar p/ preparação</button>';
     } else {
@@ -373,7 +389,8 @@
     if (!btn) return;
     var act = btn.getAttribute("data-act");
     var id = btn.getAttribute("data-id");
-    if (act === "to-preparacao") setStatus(id, "preparacao", "", "Voltou para preparação.");
+    if (act === "copy-link") copiarLink(id);
+    else if (act === "to-preparacao") setStatus(id, "preparacao", "", "Voltou para preparação.");
     else if (act === "to-disponivel") setStatus(id, "disponivel", "", "Marcado como disponível.");
     else if (act === "to-vendido") setStatus(id, "vendido", todayISO(), "Marcado como vendido.");
   });

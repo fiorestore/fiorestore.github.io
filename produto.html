@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title>Fiore Store · Anúncio</title>
+<style>
+  :root {
+    --brand:#FCAD2C; --brand-tint:#FDF1DD;
+    --primary:#A0640A; --primary-dark:#7A4B02;
+    --bg:#FBF8F3; --card:#ffffff; --text:#1d1d1f; --muted:#6e6e73;
+    --border:#e7ddcb; --error:#c0392b; --error-tint:#fdecea;
+    --success:#1e7e34; --success-tint:#eaf6ec;
+    --whats:#1fa855;
+    --shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif; background:var(--bg); color:var(--text); }
+  .header { background:var(--brand); padding:20px 16px 16px; text-align:center; }
+  .header h1 { margin:0; color:#fff; font-size:22px; text-shadow:0 1px 2px rgba(0,0,0,0.12); }
+  .wrap { max-width:640px; margin:0 auto; padding:16px 16px 48px; }
+  .card { background:var(--card); border:1px solid var(--border); border-radius:14px; box-shadow:var(--shadow); overflow:hidden; }
+
+  .galeria { background:#f2ece1; }
+  .principal { width:100%; aspect-ratio:4/3; display:flex; align-items:center; justify-content:center; cursor:zoom-in; }
+  .principal img { width:100%; height:100%; object-fit:contain; display:block; }
+  .sem-foto { color:var(--muted); font-size:14px; text-align:center; padding:0 24px; cursor:default; }
+  .miniaturas { display:flex; gap:8px; padding:10px 12px; overflow-x:auto; background:#fff; border-top:1px solid var(--border); }
+  .miniaturas button { flex:none; width:72px; height:54px; padding:0; border:2px solid transparent; border-radius:8px; overflow:hidden; background:#f2ece1; cursor:pointer; }
+  .miniaturas button.ativa { border-color:var(--brand); }
+  .miniaturas img { width:100%; height:100%; object-fit:cover; display:block; }
+
+  .info { padding:18px 18px 20px; }
+  .modelo { font-size:19px; font-weight:700; line-height:1.3; margin:0; }
+  .preco { font-size:30px; font-weight:800; color:var(--success); margin:10px 0 2px; font-variant-numeric:tabular-nums; }
+  .preco-nota { font-size:12.5px; color:var(--muted); }
+  .chips { display:flex; flex-wrap:wrap; gap:6px; margin-top:14px; }
+  .chip { background:var(--brand-tint); color:var(--primary-dark); font-size:13px; padding:6px 11px; border-radius:8px; }
+  .specs { margin:16px 0 0; display:grid; grid-template-columns:auto 1fr; gap:8px 14px; font-size:14.5px; }
+  .specs dt { color:var(--muted); }
+  .specs dd { margin:0; font-weight:600; }
+  .obs { margin-top:16px; padding:12px 14px; background:#faf6ee; border-radius:10px; font-size:14px; line-height:1.5; white-space:pre-wrap; }
+
+  .aviso { margin-top:14px; padding:12px 14px; border-radius:10px; font-size:14px; }
+  .aviso.vendido { background:var(--error-tint); color:var(--error); }
+  .aviso.breve { background:var(--brand-tint); color:var(--primary-dark); }
+
+  .btn-whats { display:block; margin-top:18px; padding:15px 18px; text-align:center; background:var(--whats); color:#fff; font-size:16.5px; font-weight:700; border-radius:12px; text-decoration:none; }
+  .btn-whats:active { filter:brightness(.92); }
+  .rodape { text-align:center; color:var(--muted); font-size:12.5px; margin-top:20px; }
+
+  .estado { text-align:center; color:var(--muted); padding:48px 16px; font-size:15px; }
+  #lightbox { position:fixed; inset:0; background:rgba(0,0,0,.9); display:flex; align-items:center; justify-content:center; z-index:50; cursor:zoom-out; }
+  #lightbox[hidden] { display:none; }
+  #lightbox img { max-width:96vw; max-height:92vh; border-radius:6px; }
+</style>
+</head>
+<body>
+
+<header class="header"><h1>Fiore Store</h1></header>
+
+<main class="wrap">
+  <div id="estado" class="estado">Carregando anúncio…</div>
+  <div id="anuncio" class="card" hidden>
+    <div class="galeria">
+      <div class="principal" id="principal"></div>
+      <div class="miniaturas" id="miniaturas" hidden></div>
+    </div>
+    <div class="info">
+      <h2 class="modelo" id="modelo"></h2>
+      <div class="preco" id="preco"></div>
+      <div class="preco-nota" id="precoNota"></div>
+      <div class="chips" id="chips"></div>
+      <dl class="specs" id="specs"></dl>
+      <div class="obs" id="obs" hidden></div>
+      <div id="aviso"></div>
+      <a class="btn-whats" id="btnWhats" href="#" target="_blank" rel="noopener">💬 Tenho interesse — falar no WhatsApp</a>
+    </div>
+  </div>
+  <div class="rodape">Fiore Store · notebooks e MacBooks</div>
+</main>
+
+<div id="lightbox" hidden><img referrerpolicy="no-referrer" alt="Foto do aparelho"></div>
+
+<script>
+(function () {
+  "use strict";
+
+  var WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbw22fQo18s_OSnF8zBUGagKBoAk-5b0bymc2XCPcusiaE-IRb2nFfyZsB31ywvqeV5RBA/exec';
+  var SENHA = 'TROQUE_PARA_UMA_SENHA_SUA';
+  var WHATSAPP_LOJA = '5519994161157';
+
+  var fmtMoney = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
+
+  function $(id) { return document.getElementById(id); }
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function fotoUrl(fileId, w) { return 'https://drive.google.com/thumbnail?id=' + encodeURIComponent(fileId) + '&sz=w' + w; }
+  function comGB(v) { v = String(v || '').trim(); return /^\d+$/.test(v) ? v + 'GB' : v; }
+
+  function mostrarErro(msg) {
+    var el = $('estado');
+    el.textContent = msg;
+    el.hidden = false;
+    $('anuncio').hidden = true;
+  }
+
+  function mensagemWhats(p) {
+    return 'Olá! Tenho interesse neste anúncio: ' + p.modelo + ' (' + fmtMoney.format(p.venda) + ') ' + location.href;
+  }
+
+  function renderGaleria(fotos) {
+    var principal = $('principal'), mini = $('miniaturas');
+    if (!fotos.length) {
+      principal.innerHTML = '<div class="sem-foto">Fotos sob consulta — peça pelo WhatsApp que enviamos na hora.</div>';
+      principal.style.cursor = 'default';
+      return;
+    }
+    function selecionar(i) {
+      principal.innerHTML = '<img referrerpolicy="no-referrer" src="' + fotoUrl(fotos[i], 1200) + '" alt="Foto ' + (i + 1) + ' do aparelho" data-full="' + fotoUrl(fotos[i], 2000) + '">';
+      Array.prototype.forEach.call(mini.children, function (b, k) { b.className = k === i ? 'ativa' : ''; });
+    }
+    if (fotos.length > 1) {
+      mini.innerHTML = fotos.map(function (f, i) {
+        return '<button type="button" data-i="' + i + '" aria-label="Ver foto ' + (i + 1) + '"><img referrerpolicy="no-referrer" src="' + fotoUrl(f, 200) + '" alt=""></button>';
+      }).join('');
+      mini.hidden = false;
+      mini.addEventListener('click', function (e) {
+        var b = e.target.closest('button[data-i]');
+        if (b) selecionar(parseInt(b.getAttribute('data-i'), 10));
+      });
+    }
+    selecionar(0);
+  }
+
+  function render(p) {
+    document.title = p.modelo + ' · Fiore Store';
+    $('modelo').textContent = p.modelo;
+    $('preco').textContent = fmtMoney.format(p.venda);
+    $('precoNota').textContent = p.condicao ? 'Aparelho ' + String(p.condicao).toLowerCase() : '';
+
+    $('chips').innerHTML = [p.tipo, p.condicao].filter(Boolean).map(function (c) { return '<span class="chip">' + esc(c) + '</span>'; }).join('');
+
+    var linhas = [
+      ['Processador', p.processador], ['Memória RAM', comGB(p.ram)], ['Armazenamento', p.armazenamento], ['Placa de vídeo', p.gpu]
+    ].filter(function (l) { return l[1]; });
+    $('specs').innerHTML = linhas.map(function (l) { return '<dt>' + esc(l[0]) + '</dt><dd>' + esc(l[1]) + '</dd>'; }).join('');
+
+    if (p.observacoes) { $('obs').textContent = p.observacoes; $('obs').hidden = false; }
+
+    var status = String(p.status || '').toLowerCase();
+    var aviso = $('aviso'), btn = $('btnWhats');
+    if (status === 'vendido') {
+      aviso.innerHTML = '<div class="aviso vendido">Este aparelho já foi vendido. Chame a gente para ver o que temos disponível.</div>';
+      btn.textContent = '💬 Ver outros modelos no WhatsApp';
+      btn.href = 'https://wa.me/' + WHATSAPP_LOJA + '?text=' + encodeURIComponent('Olá! Vi o anúncio do ' + p.modelo + ', mas ele já foi vendido. O que vocês têm disponível?');
+    } else {
+      if (status !== 'disponivel') aviso.innerHTML = '<div class="aviso breve">Este aparelho está em preparação. Fale com a gente para saber a previsão.</div>';
+      btn.href = 'https://wa.me/' + WHATSAPP_LOJA + '?text=' + encodeURIComponent(mensagemWhats(p));
+    }
+
+    renderGaleria(p.fotos || []);
+    $('estado').hidden = true;
+    $('anuncio').hidden = false;
+  }
+
+  document.addEventListener('click', function (e) {
+    var lb = $('lightbox');
+    var im = e.target.closest('img[data-full]');
+    if (im) { lb.querySelector('img').src = im.getAttribute('data-full'); lb.hidden = false; }
+    else if (e.target.closest('#lightbox')) { lb.hidden = true; }
+  });
+
+  var id = new URLSearchParams(location.search).get('id');
+  if (!id) { mostrarErro('Link de anúncio inválido.'); return; }
+
+  var qs = new URLSearchParams({ action: 'produto_publico', id: id, senha: SENHA });
+  function carregar(tentativa) {
+    fetch(WEBAPP_URL + '?' + qs.toString()).then(function (r) { return r.json(); }).then(function (res) {
+      if (res && res.ok && res.produto) render(res.produto);
+      else mostrarErro('Anúncio não encontrado. Peça um novo link pelo WhatsApp.');
+    }).catch(function () {
+      if (tentativa < 2) { setTimeout(function () { carregar(tentativa + 1); }, 1500); }
+      else mostrarErro('Não foi possível carregar o anúncio agora. Tente novamente em instantes.');
+    });
+  }
+  carregar(0);
+})();
+</script>
+</body>
+</html>
