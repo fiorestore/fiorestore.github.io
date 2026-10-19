@@ -90,7 +90,7 @@
 </div>
 
 <div class="wrap">
-  <div class="subtitle">Consulta de notebooks e MacBooks disponíveis</div>
+  <div class="subtitle">Consulta de notebooks, gamers e MacBooks disponíveis</div>
   <a class="backlink" href="https://fiorestore.github.io/painel-funcionario.html">« voltar ao painel</a>
 
   <div id="banner"></div>
@@ -99,7 +99,7 @@
 
   <div class="toolbar">
     <input type="search" id="search" placeholder="Buscar por modelo, processador ou série…">
-    <select id="filtroTipo" aria-label="Tipo"><option value="">Notebook e MacBook</option><option value="notebook">Só Notebook</option><option value="macbook">Só MacBook</option></select>
+    <select id="filtroTipo" aria-label="Tipo"><option value="">Todos (Notebook, Gamer e MacBook)</option><option value="notebook">Só Notebook (sem gamer)</option><option value="gamer">Só Notebook Gamer</option><option value="macbook">Só MacBook</option></select>
     <select id="ordem" aria-label="Ordenar"><option value="recentes">Mais recentes</option><option value="menor">Menor preço</option><option value="maior">Maior preço</option></select>
     <button class="btn btn-ghost" id="btnRefresh">Atualizar</button>
     <button class="btn btn-secundario" id="btnWhats">📲 Lista pro WhatsApp</button>
@@ -195,14 +195,18 @@
     }).join("");
   }
 
+  function categoriaTipo(d) {
+    var t = String(d.tipo || "") + " " + String(d.modelo || "");
+    if (/macbook/i.test(t)) return "macbook";
+    if (/gamer|gaming|legion|nitro|predator|\brog\b|\btuf\b|alienware|victus|\bloq\b/i.test(t)) return "gamer";
+    return "notebook";
+  }
+
   function filteredDevices() {
     var q = state.search.trim().toLowerCase();
     return state.devices.filter(function (d) {
       if (state.filterStatus !== "todos" && normalizeStatus(d.status) !== state.filterStatus) return false;
-      if (state.tipo) {
-        var ehMac = /macbook/i.test(String(d.tipo || "") + " " + String(d.modelo || ""));
-        if ((state.tipo === "macbook") !== ehMac) return false;
-      }
+      if (state.tipo && categoriaTipo(d) !== state.tipo) return false;
       if (!q) return true;
       var hay = [d.modelo, d.processador, d.numeroSerie, d.armazenamento, d.ram].join(" ").toLowerCase();
       return hay.indexOf(q) !== -1;
