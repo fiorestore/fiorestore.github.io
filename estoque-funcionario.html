@@ -52,6 +52,12 @@
   .badge-disponivel { background:var(--info-tint); color:var(--info); }
   .badge-vendido { background:var(--success-tint); color:var(--success); }
 
+
+  .device-fotos { display:flex; gap:6px; margin-top:12px; overflow-x:auto; }
+  .device-fotos img { width:96px; height:72px; object-fit:cover; border-radius:8px; border:1px solid var(--border); cursor:zoom-in; flex:none; background:var(--brand-tint); }
+  #fotoLightbox { position:fixed; inset:0; background:rgba(0,0,0,.88); display:flex; align-items:center; justify-content:center; z-index:200; cursor:zoom-out; }
+  #fotoLightbox[hidden] { display:none; }
+  #fotoLightbox img { max-width:94vw; max-height:90vh; border-radius:8px; }
   .chips { display:flex; flex-wrap:wrap; gap:6px; margin-top:12px; }
   .chip { background:var(--brand-tint); color:var(--primary-dark); font-size:12.5px; padding:5px 10px; border-radius:7px; }
 
@@ -137,6 +143,7 @@
     loaded: false,
     search: "",
     tipo: "",
+    fotos: {},
     ordem: "recentes",
     filterStatus: "disponivel"
   };
@@ -239,6 +246,30 @@
     el.innerHTML = list.map(renderDevice).join("");
   }
 
+  // ---------- fotos ----------
+  function fotoUrl(fileId, w) { return "https://drive.google.com/thumbnail?id=" + encodeURIComponent(fileId) + "&sz=w" + w; }
+
+  function agruparFotos(res) {
+    var m = {};
+    if (res && res.ok && res.fotos) res.fotos.forEach(function (f) { (m[f.deviceId] = m[f.deviceId] || []).push(f); });
+    return m;
+  }
+
+  function fotosHtml(d) {
+    var fs = state.fotos[d.id];
+    if (!fs || !fs.length) return "";
+    return '<div class="device-fotos">' + fs.map(function (f) {
+      return '<img referrerpolicy="no-referrer" src="' + fotoUrl(f.fileId, 300) + '" data-full="' + fotoUrl(f.fileId, 1400) + '" alt="Foto do aparelho" loading="lazy">';
+    }).join("") + "</div>";
+  }
+
+  document.addEventListener("click", function (e) {
+    var lb = document.getElementById("fotoLightbox");
+    var im = e.target.closest("img[data-full]");
+    if (im) { lb.querySelector("img").src = im.getAttribute("data-full"); lb.hidden = false; }
+    else if (e.target.closest("#fotoLightbox")) { lb.hidden = true; }
+  });
+
   function renderDevice(d) {
     var status = normalizeStatus(d.status);
     var chips = [d.tipo, d.condicao, d.processador, d.ram, d.armazenamento, d.gpu]
@@ -267,6 +298,7 @@
       '<span class="badge badge-' + status + '">' + escapeHtml(STATUS_LABEL[status] || status) + "</span>" +
       "</div>" +
       (chips ? '<div class="chips">' + chips + "</div>" : "") +
+      fotosHtml(d) +
       '<div class="preco"><div class="k">Preço</div><div class="v">' + fmtMoney.format(Number(d.venda) || 0) + "</div></div>" +
       (d.observacoes ? '<div class="obs">' + escapeHtml(d.observacoes) + "</div>" : "") +
       '<div class="device-actions">' + moveBtns + "</div>" +
@@ -291,7 +323,12 @@
     var btn = document.getElementById("btnRefresh");
     btn.textContent = "Atualizando…";
     btn.disabled = true;
-    api({ action: "estoque_listar" }).then(function (res) {
+    Promise.all([
+      api({ action: "estoque_listar" }),
+      api({ action: "fotos_listar" }).catch(function () { return { ok: false }; })
+    ]).then(function (rs) {
+      var res = rs[0];
+      state.fotos = agruparFotos(rs[1]);
       if (!res.ok) {
         setBanner('Erro ao carregar o estoque: ' + (res.erro || 'tente novamente.') + ' <button class="btn btn-ghost btn-sm" id="btnRetry" style="margin-left:8px">Tentar de novo</button>');
         var retry = document.getElementById("btnRetry");
@@ -394,5 +431,6 @@
   loadDevices();
 })();
 </script>
+<div id="fotoLightbox" hidden><img referrerpolicy="no-referrer" alt="Foto do aparelho"></div>
 </body>
 </html>

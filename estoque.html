@@ -88,6 +88,16 @@
   .meta { color:var(--muted); font-size:12px; margin-top:10px; }
   .obs { font-size:13px; margin-top:8px; color:var(--text); background:var(--bg); border-radius:7px; padding:8px 10px; }
 
+
+  .device-fotos { display:flex; gap:6px; margin-top:12px; overflow-x:auto; }
+  .device-fotos img { width:96px; height:72px; object-fit:cover; border-radius:8px; border:1px solid var(--border); cursor:zoom-in; flex:none; background:var(--brand-tint); }
+  #fotoLightbox { position:fixed; inset:0; background:rgba(0,0,0,.88); display:flex; align-items:center; justify-content:center; z-index:200; cursor:zoom-out; }
+  #fotoLightbox[hidden] { display:none; }
+  #fotoLightbox img { max-width:94vw; max-height:90vh; border-radius:8px; }
+  .fotos-grid { display:flex; flex-wrap:wrap; gap:8px; margin:6px 0 8px; }
+  .foto-item { position:relative; width:84px; height:84px; border-radius:10px; overflow:hidden; border:1px solid var(--border); background:var(--brand-tint); }
+  .foto-item img { width:100%; height:100%; object-fit:cover; display:block; }
+  .foto-item button { position:absolute; top:3px; right:3px; width:22px; height:22px; border:0; border-radius:50%; background:rgba(0,0,0,.7); color:#fff; font-size:14px; line-height:1; cursor:pointer; }
   .device-actions { display:flex; gap:8px; margin-top:14px; flex-wrap:wrap; }
   .confirm-row { display:flex; gap:8px; align-items:center; font-size:13px; color:var(--error); margin-top:14px; flex-wrap:wrap; }
 
@@ -215,6 +225,12 @@
     <label>Observações <span style="font-weight:400;color:var(--muted)">(opcional)</span></label>
     <textarea id="f-observacoes" placeholder="Marcas de uso, bateria, acessórios inclusos…"></textarea>
 
+    <label>Fotos <span style="font-weight:400;color:var(--muted)">(opcional, até 4)</span></label>
+    <div class="fotos-grid" id="fotosGrid"></div>
+    <input type="file" id="f-fotos" accept="image/*" multiple hidden>
+    <button type="button" class="btn btn-secundario btn-sm" id="btnAddFoto">📷 Adicionar fotos</button>
+    <div class="hint" id="fotosHint" style="margin-top:6px"></div>
+
     <div class="form-actions">
       <button class="btn btn-ghost" id="btnCancel">Cancelar</button>
       <button class="btn btn-principal" id="btnSave">Salvar</button>
@@ -257,6 +273,8 @@
     confirmDeleteId: null,
     search: "",
     tipo: "",
+    fotos: {},
+    formFotos: { existentes: [], novas: [], remover: [] },
     ordem: "recentes",
     filterStatus: "preparacao"
   };
@@ -385,6 +403,107 @@
     el.innerHTML = list.map(renderDevice).join("");
   }
 
+  // ---------- fotos ----------
+  function fotoUrl(fileId, w) { return "https://drive.google.com/thumbnail?id=" + encodeURIComponent(fileId) + "&sz=w" + w; }
+
+  function agruparFotos(res) {
+    var m = {};
+    if (res && res.ok && res.fotos) res.fotos.forEach(function (f) { (m[f.deviceId] = m[f.deviceId] || []).push(f); });
+    return m;
+  }
+
+  function fotosHtml(d) {
+    var fs = state.fotos[d.id];
+    if (!fs || !fs.length) return "";
+    return '<div class="device-fotos">' + fs.map(function (f) {
+      return '<img referrerpolicy="no-referrer" src="' + fotoUrl(f.fileId, 300) + '" data-full="' + fotoUrl(f.fileId, 1400) + '" alt="Foto do aparelho" loading="lazy">';
+    }).join("") + "</div>";
+  }
+
+  document.addEventListener("click", function (e) {
+    var lb = document.getElementById("fotoLightbox");
+    var im = e.target.closest("img[data-full]");
+    if (im) { lb.querySelector("img").src = im.getAttribute("data-full"); lb.hidden = false; }
+    else if (e.target.closest("#fotoLightbox")) { lb.hidden = true; }
+  });
+
+  var FOTOS_MAX = 4;
+
+  function totalFormFotos() { return state.formFotos.existentes.length + state.formFotos.novas.length; }
+
+  function renderFormFotos() {
+    var f = state.formFotos, html = "";
+    f.existentes.forEach(function (x, i) {
+      html += '<div class="foto-item"><img referrerpolicy="no-referrer" src="' + fotoUrl(x.fileId, 200) + '" alt=""><button type="button" data-foto-rm="e' + i + '" aria-label="Remover foto">×</button></div>';
+    });
+    f.novas.forEach(function (x, i) {
+      html += '<div class="foto-item"><img src="' + x.url + '" alt=""><button type="button" data-foto-rm="n' + i + '" aria-label="Remover foto">×</button></div>';
+    });
+    document.getElementById("fotosGrid").innerHTML = html;
+    var n = totalFormFotos();
+    document.getElementById("fotosHint").textContent = n + " de " + FOTOS_MAX + " fotos";
+    document.getElementById("btnAddFoto").disabled = n >= FOTOS_MAX;
+  }
+
+  function resetFormFotos(device) {
+    state.formFotos = { existentes: device ? (state.fotos[device.id] || []).slice() : [], novas: [], remover: [] };
+    renderFormFotos();
+  }
+
+  // Reduz a foto (máx. 1400px, JPEG) pra subir rápido e caber no Drive sem peso.
+  function comprimirFoto(file) {
+    return new Promise(function (resolve, reject) {
+      var url = URL.createObjectURL(file);
+      var img = new Image();
+      img.onload = function () {
+        var w = img.naturalWidth, h = img.naturalHeight, sc = Math.min(1, 1400 / Math.max(w, h));
+        var c = document.createElement("canvas");
+        c.width = Math.round(w * sc); c.height = Math.round(h * sc);
+        c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+        URL.revokeObjectURL(url);
+        c.toBlob(function (b) { b ? resolve(b) : reject(new Error("falha")); }, "image/jpeg", 0.82);
+      };
+      img.onerror = function () { URL.revokeObjectURL(url); reject(new Error("imagem inválida")); };
+      img.src = url;
+    });
+  }
+
+  function blobParaBase64(blob) {
+    return new Promise(function (resolve, reject) {
+      var r = new FileReader();
+      r.onload = function () { resolve(String(r.result).split(",")[1]); };
+      r.onerror = reject;
+      r.readAsDataURL(blob);
+    });
+  }
+
+  function enviarFoto(deviceId, blob) {
+    return blobParaBase64(blob).then(function (b64) {
+      return fetch(WEBAPP_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({ action: "foto_enviar", senha: SENHA, deviceId: deviceId, mime: "image/jpeg", dados: b64 })
+      }).then(function (r) { return r.json(); });
+    });
+  }
+
+  // Aplica as remoções e envia as fotos novas; devolve quantas falharam.
+  function salvarFotos(deviceId, ff) {
+    var erros = 0, seq = Promise.resolve();
+    ff.remover.forEach(function (x) {
+      seq = seq.then(function () {
+        return api({ action: "foto_excluir", id: x.id }).then(function (r) { if (!r.ok) erros++; });
+      }).catch(function () { erros++; });
+    });
+    ff.novas.forEach(function (x, i) {
+      seq = seq.then(function () {
+        document.getElementById("btnSave").textContent = "Enviando foto " + (i + 1) + "/" + ff.novas.length + "…";
+        return enviarFoto(deviceId, x.blob).then(function (r) { if (!r.ok) erros++; });
+      }).catch(function () { erros++; });
+    });
+    return seq.then(function () { return erros; });
+  }
+
   function renderDevice(d) {
     var status = normalizeStatus(d.status);
     var custo = Number(d.custo) || 0;
@@ -434,6 +553,7 @@
       '<span class="badge badge-' + status + '">' + escapeHtml(STATUS_LABEL[status] || status) + "</span>" +
       "</div>" +
       (chips ? '<div class="chips">' + chips + "</div>" : "") +
+      fotosHtml(d) +
       valuesHtml +
       (d.observacoes ? '<div class="obs">' + escapeHtml(d.observacoes) + "</div>" : "") +
       actions +
@@ -451,6 +571,7 @@
 
   function openForm(device) {
     state.editingId = device ? device.id : null;
+    resetFormFotos(device);
     document.getElementById("formTitle").textContent = device ? "Editar aparelho" : "Novo aparelho";
     document.getElementById("f-modelo").value = device ? device.modelo || "" : "";
     document.getElementById("f-tipo").value = device ? device.tipo || "Notebook" : "Notebook";
@@ -471,6 +592,7 @@
 
   function closeForm() {
     state.editingId = null;
+    state.formFotos.novas.forEach(function (x) { URL.revokeObjectURL(x.url); });
     document.getElementById("formPanel").hidden = true;
   }
 
@@ -502,10 +624,16 @@
 
     api(p).then(function (res) {
       if (!res.ok) { toast("Erro: " + (res.erro || "não foi possível salvar.")); return; }
+      var deviceId = isNew ? res.id : state.editingId;
+      var ff = state.formFotos;
       closeForm();
       toast(isNew ? "Aparelho adicionado na aba Em preparação." : "Aparelho atualizado.");
       if (isNew) state.filterStatus = "preparacao";
-      loadDevices();
+      if (!deviceId || (!ff.novas.length && !ff.remover.length)) { loadDevices(); return; }
+      return salvarFotos(deviceId, ff).then(function (erros) {
+        if (erros) toast(erros + " foto(s) não puderam ser enviadas. Tente de novo pelo botão Editar.");
+        loadDevices();
+      });
     }).catch(function () {
       toast("Erro de conexão ao salvar.");
     }).finally(function () {
@@ -570,7 +698,12 @@
     var btn = document.getElementById("btnRefresh");
     btn.textContent = "Atualizando…";
     btn.disabled = true;
-    api({ action: "estoque_listar" }).then(function (res) {
+    Promise.all([
+      api({ action: "estoque_listar" }),
+      api({ action: "fotos_listar" }).catch(function () { return { ok: false }; })
+    ]).then(function (rs) {
+      var res = rs[0];
+      state.fotos = agruparFotos(rs[1]);
       if (!res.ok) {
         setBanner('Erro ao carregar o estoque: ' + (res.erro || 'tente novamente.') + ' <button class="btn btn-ghost btn-sm" id="btnRetry" style="margin-left:8px">Tentar de novo</button>');
         var retry = document.getElementById("btnRetry");
@@ -592,6 +725,30 @@
   }
 
   // ---------- events ----------
+
+  document.getElementById("btnAddFoto").addEventListener("click", function () { document.getElementById("f-fotos").click(); });
+  document.getElementById("f-fotos").addEventListener("change", function (e) {
+    var files = Array.prototype.slice.call(e.target.files || []);
+    e.target.value = "";
+    var livres = Math.max(FOTOS_MAX - totalFormFotos(), 0);
+    if (files.length > livres) { toast("Máximo de " + FOTOS_MAX + " fotos por aparelho."); files = files.slice(0, livres); }
+    files.reduce(function (p, f) {
+      return p.then(function () {
+        return comprimirFoto(f).then(function (b) {
+          state.formFotos.novas.push({ blob: b, url: URL.createObjectURL(b) });
+          renderFormFotos();
+        }).catch(function () { toast("Não consegui ler uma das imagens."); });
+      });
+    }, Promise.resolve());
+  });
+  document.getElementById("fotosGrid").addEventListener("click", function (e) {
+    var b = e.target.closest("button[data-foto-rm]");
+    if (!b) return;
+    var k = b.getAttribute("data-foto-rm"), i = parseInt(k.slice(1), 10), f = state.formFotos;
+    if (k.charAt(0) === "e") { f.remover.push(f.existentes[i]); f.existentes.splice(i, 1); }
+    else { URL.revokeObjectURL(f.novas[i].url); f.novas.splice(i, 1); }
+    renderFormFotos();
+  });
 
   document.getElementById("btnNew").addEventListener("click", function () { openForm(null); });
   document.getElementById("btnCancel").addEventListener("click", closeForm);
@@ -690,5 +847,6 @@
   loadDevices();
 })();
 </script>
+<div id="fotoLightbox" hidden><img referrerpolicy="no-referrer" alt="Foto do aparelho"></div>
 </body>
 </html>
