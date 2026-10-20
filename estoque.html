@@ -33,6 +33,8 @@
   .tipo-chips { display:flex; flex-wrap:wrap; gap:8px; margin:6px 0 14px; }
   .tipo-chip { padding:10px 14px; border:1px solid var(--border); border-radius:10px; background:var(--card); color:var(--muted); font-size:13.5px; font-weight:600; font-family:inherit; cursor:pointer; }
   .tipo-chip.active { background:var(--primary); border-color:var(--primary); color:#fff; }
+  .pc-comp { margin-top:12px; display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:6px 14px; font-size:13.5px; }
+  .pc-comp .k { display:block; color:var(--muted); font-size:11.5px; font-weight:600; text-transform:uppercase; letter-spacing:.03em; }
   .secao-tab { font-size:14.5px; padding:11px 16px; }
   #subTabs { margin-top:-6px; }
   .tabs { display:flex; gap:6px; margin-bottom:16px; overflow-x:auto; -webkit-overflow-scrolling:touch; }
@@ -176,6 +178,7 @@
           <option>Notebook</option>
           <option>Notebook Gamer</option>
           <option>MacBook</option>
+          <option>PC Gamer</option>
           <option>PC Completo</option>
           <option>Placa-mãe</option>
           <option>Fonte</option>
@@ -215,6 +218,23 @@
         <label>Placa de vídeo</label>
         <input id="f-gpu" placeholder="Deixe em branco se integrada">
       </div>
+    </div>
+
+    <div id="pcComponentes" hidden>
+      <label>Placa-mãe (modelo)</label>
+      <input id="f-pc-placa" placeholder="Ex: ASUS Prime B450M-A">
+      <div class="row2">
+        <div>
+          <label>Fonte</label>
+          <input id="f-pc-fonte" placeholder="Ex: Corsair CV650 650W">
+        </div>
+        <div>
+          <label>Gabinete</label>
+          <input id="f-pc-gabinete" placeholder="Ex: Gamemax Spark preto">
+        </div>
+      </div>
+      <label>Refrigeração</label>
+      <input id="f-pc-refrig" placeholder="Ex: Water cooler 240mm / Air cooler Hyper 212">
     </div>
 
     <div class="row2">
@@ -379,7 +399,7 @@
     }).join("");
   }
 
-  var PC_SUBS = [["", "Todas as peças"], ["pc-completo", "PC completo"], ["placa-mae", "Placa-mãe"], ["fonte", "Fonte"], ["gabinete", "Gabinete"], ["refrigeracao", "Refrigeração"], ["outras", "Outras peças"]];
+  var PC_SUBS = [["", "Todas as peças"], ["pc-completo", "PCs (gamer / completo)"], ["placa-mae", "Placa-mãe"], ["fonte", "Fonte"], ["gabinete", "Gabinete"], ["refrigeracao", "Refrigeração"], ["outras", "Outras peças"]];
 
   function semAcento(s) { return String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase(); }
 
@@ -574,6 +594,43 @@
     return seq.then(function () { return erros; });
   }
 
+  // Componentes do PC (placa-mãe, fonte, gabinete, refrigeração) ficam no início das observações:
+  // [PC]\nPlaca-mãe: ...\n[/PC]\ntexto livre
+  var PC_COMP = [["placa", "Placa-mãe"], ["fonte", "Fonte"], ["gabinete", "Gabinete"], ["refrig", "Refrigeração"]];
+
+  function parseObs(obs) {
+    var s = String(obs || ""), comp = {}, texto = s;
+    var m = s.match(/^\[PC\]\n([\s\S]*?)\n\[\/PC\]\n?/);
+    if (m) {
+      m[1].split("\n").forEach(function (ln) {
+        var i = ln.indexOf(": ");
+        if (i <= 0) return;
+        var k = ln.slice(0, i), v = ln.slice(i + 2);
+        PC_COMP.forEach(function (c) { if (c[1] === k) comp[c[0]] = v; });
+      });
+      texto = s.slice(m[0].length);
+    }
+    return { comp: comp, texto: texto };
+  }
+
+  function buildObs(comp, texto) {
+    var linhas = PC_COMP.filter(function (c) { return comp[c[0]]; }).map(function (c) { return c[1] + ": " + comp[c[0]]; });
+    return linhas.length ? "[PC]\n" + linhas.join("\n") + "\n[/PC]\n" + texto : texto;
+  }
+
+  function pcCompHtml(d) {
+    var comp = parseObs(d.observacoes).comp;
+    var itens = PC_COMP.filter(function (c) { return comp[c[0]]; }).map(function (c) {
+      return '<div><span class="k">' + c[1] + '</span> ' + escapeHtml(comp[c[0]]) + "</div>";
+    });
+    return itens.length ? '<div class="pc-comp">' + itens.join("") + "</div>" : "";
+  }
+
+  function obsHtml(d) {
+    var t = parseObs(d.observacoes).texto.trim();
+    return pcCompHtml(d) + (t ? '<div class="obs">' + escapeHtml(t) + "</div>" : "");
+  }
+
   function renderDevice(d) {
     var status = normalizeStatus(d.status);
     var custo = Number(d.custo) || 0;
@@ -626,7 +683,7 @@
       (chips ? '<div class="chips">' + chips + "</div>" : "") +
       fotosHtml(d) +
       valuesHtml +
-      (d.observacoes ? '<div class="obs">' + escapeHtml(d.observacoes) + "</div>" : "") +
+      obsHtml(d) +
       actions +
       "</div>"
     );
@@ -659,6 +716,9 @@
       });
     }
     var cat = categoriaTipo({ tipo: document.getElementById("f-tipo").value });
+    var ehPc = cat === "pc-completo";
+    document.getElementById("pcComponentes").hidden = !ehPc;
+    if (!ehPc) ["f-pc-placa", "f-pc-fonte", "f-pc-gabinete", "f-pc-refrig"].forEach(function (id) { document.getElementById(id).value = ""; });
     var map = CAMPOS_PECAS[cat] || CAMPOS_PADRAO.concat();
     CAMPOS_IDS.forEach(function (id, i) {
       var el = document.getElementById(id), def = map[i];
@@ -673,7 +733,7 @@
   // Opções de tipo mostradas no cadastro: só as da seção em que o produto está
   var TIPOS_SECAO = {
     notebooks: ["Notebook", "Notebook Gamer", "MacBook", "Outro"],
-    pcs: ["PC Completo", "Placa-mãe", "Fonte", "Gabinete", "Refrigeração", "Outras peças"]
+    pcs: ["PC Gamer", "PC Completo", "Placa-mãe", "Fonte", "Gabinete", "Refrigeração", "Outras peças"]
   };
 
   function renderTipoChips(secao) {
@@ -686,10 +746,20 @@
     document.getElementById("tipoChips").setAttribute("data-secao", secao);
   }
 
+  function compDoForm() {
+    if (document.getElementById("pcComponentes").hidden) return {};
+    return {
+      placa: document.getElementById("f-pc-placa").value.trim(),
+      fonte: document.getElementById("f-pc-fonte").value.trim(),
+      gabinete: document.getElementById("f-pc-gabinete").value.trim(),
+      refrig: document.getElementById("f-pc-refrig").value.trim()
+    };
+  }
+
   function tipoInicialNovo() {
     if (state.secao !== "pcs") return "Notebook";
     var m = { "placa-mae": "Placa-mãe", "fonte": "Fonte", "gabinete": "Gabinete", "refrigeracao": "Refrigeração", "outras": "Outras peças" };
-    return m[state.tipo] || "PC Completo";
+    return m[state.tipo] || "PC Gamer";
   }
 
   function openForm(device) {
@@ -707,7 +777,12 @@
     document.getElementById("f-venda").value = device ? device.venda || "" : "";
     document.getElementById("f-dataEntrada").value = device ? device.dataEntrada || todayISO() : todayISO();
     document.getElementById("f-serial").value = device ? device.numeroSerie || "" : "";
-    document.getElementById("f-observacoes").value = device ? device.observacoes || "" : "";
+    var po = parseObs(device ? device.observacoes : "");
+    document.getElementById("f-observacoes").value = po.texto;
+    document.getElementById("f-pc-placa").value = po.comp.placa || "";
+    document.getElementById("f-pc-fonte").value = po.comp.fonte || "";
+    document.getElementById("f-pc-gabinete").value = po.comp.gabinete || "";
+    document.getElementById("f-pc-refrig").value = po.comp.refrig || "";
     aplicarCamposPorTipo();
     renderTipoChips(device ? secaoDe(device) : state.secao);
     document.getElementById("formPanel").hidden = false;
@@ -737,7 +812,7 @@
       venda: parseFloat(document.getElementById("f-venda").value) || 0,
       dataEntrada: document.getElementById("f-dataEntrada").value || todayISO(),
       numeroSerie: document.getElementById("f-serial").value.trim(),
-      observacoes: document.getElementById("f-observacoes").value.trim()
+      observacoes: buildObs(compDoForm(), document.getElementById("f-observacoes").value.trim())
     };
 
     var isNew = !state.editingId;
@@ -960,6 +1035,9 @@
       var specs = [d.condicao, d.processador, d.ram, d.armazenamento, d.gpu].filter(Boolean).join(" • ");
       linhas.push("*" + (i + 1) + ") " + (d.modelo || "Aparelho") + "*");
       if (specs) linhas.push(specs);
+      var pcc = parseObs(d.observacoes).comp;
+      var pcl = PC_COMP.filter(function (c) { return pcc[c[0]]; }).map(function (c) { return c[1] + ": " + pcc[c[0]]; });
+      if (pcl.length) linhas.push(pcl.join(" • "));
       linhas.push("💰 " + fmtMoney.format(Number(d.venda) || 0));
       linhas.push("");
     });

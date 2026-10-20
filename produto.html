@@ -115,6 +115,22 @@
     return '';
   }
 
+  var PC_COMP = [['placa', 'Placa-mãe'], ['fonte', 'Fonte'], ['gabinete', 'Gabinete'], ['refrig', 'Refrigeração']];
+  function parseObs(obs) {
+    var s = String(obs || ''), comp = {}, texto = s;
+    var m = s.match(/^\[PC\]\n([\s\S]*?)\n\[\/PC\]\n?/);
+    if (m) {
+      m[1].split('\n').forEach(function (ln) {
+        var i = ln.indexOf(': ');
+        if (i <= 0) return;
+        var k = ln.slice(0, i), v = ln.slice(i + 2);
+        PC_COMP.forEach(function (c) { if (c[1] === k) comp[c[0]] = v; });
+      });
+      texto = s.slice(m[0].length);
+    }
+    return { comp: comp, texto: texto };
+  }
+
   function mostrarErro(msg) {
     var el = $('estado');
     el.textContent = msg;
@@ -162,9 +178,11 @@
     var linhas = (peca ? [[peca[0], p.processador], [peca[1], p.ram], [peca[2], p.armazenamento]] : [
       ['Processador', p.processador], ['Memória RAM', comGB(p.ram)], ['Armazenamento', p.armazenamento], ['Placa de vídeo', p.gpu]
     ]).filter(function (l) { return l[1]; });
+    var po = parseObs(p.observacoes);
+    PC_COMP.forEach(function (c) { if (po.comp[c[0]]) linhas.push([c[1], po.comp[c[0]]]); });
     $('specs').innerHTML = linhas.map(function (l) { return '<dt>' + esc(l[0]) + '</dt><dd>' + esc(l[1]) + '</dd>'; }).join('');
 
-    if (p.observacoes) { $('obs').textContent = p.observacoes; $('obs').hidden = false; }
+    if (po.texto.trim()) { $('obs').textContent = po.texto.trim(); $('obs').hidden = false; }
 
     var status = String(p.status || '').toLowerCase();
     var aviso = $('aviso'), btn = $('btnWhats');
