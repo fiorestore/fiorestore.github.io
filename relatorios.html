@@ -231,7 +231,7 @@
 
     var r = calcular();
     var tilesPrincipais = [
-      ["Notebooks vendidos", String(r.qtdNotebooks), ""],
+      ["Produtos vendidos", String(r.qtdNotebooks), ""],
       ["Manutenções finalizadas", String(r.qtdManutencoes), ""],
       ["Clientes cadastrados", String(r.qtdClientes), ""],
       ["Faturamento", fmtMoney.format(r.faturamento), "brand"],
@@ -252,7 +252,7 @@
       }).join("") + "</div>" +
       '<div class="section-title">Vendas por forma de pagamento</div>' +
       '<div class="pagamentos">' + pagHtml + "</div>" +
-      '<div class="hint">Manutenções contam pela data de entrada do aparelho (não existe data de conclusão registrada). O lucro de manutenções considera o valor cheio do orçamento, pois não há custo de peças registrado. "Vendas por forma de pagamento" usa o histórico de compras dos clientes — pode não bater exatamente com "Notebooks vendidos" se alguma venda foi registrada só no Estoque.</div>';
+      '<div class="hint">Manutenções contam pela data de entrada do aparelho (não existe data de conclusão registrada). O lucro de manutenções considera o valor cheio do orçamento, pois não há custo de peças registrado. "Vendas por forma de pagamento" usa o histórico de compras dos clientes — pode não bater exatamente com "Produtos vendidos" se alguma venda foi registrada só no Estoque.</div>';
   }
 
   // ---------- load ----------

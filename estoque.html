@@ -30,6 +30,8 @@
   .stat .v.success { color:var(--success); }
   .stat .v.brand { color:var(--primary); }
 
+  .secao-tab { font-size:14.5px; padding:11px 16px; }
+  #subTabs { margin-top:-6px; }
   .tabs { display:flex; gap:6px; margin-bottom:16px; overflow-x:auto; -webkit-overflow-scrolling:touch; }
   .tab { flex:none; display:flex; align-items:center; gap:7px; padding:9px 14px; border-radius:10px; border:1px solid var(--border); background:var(--card); color:var(--muted); font-size:13.5px; font-weight:600; cursor:pointer; }
   .tab .n { background:var(--bg); color:var(--muted); border-radius:999px; padding:1px 7px; font-size:11.5px; font-variant-numeric:tabular-nums; }
@@ -132,10 +134,13 @@
 </div>
 
 <div class="wrap">
-  <div class="subtitle">Controle de notebooks, gamers e MacBooks — entrada, custo e venda</div>
+  <div class="subtitle">Controle de notebooks, MacBooks, PCs e peças — entrada, custo e venda</div>
   <a class="backlink" href="https://fiorestore.github.io/">« fiorestore.github.io — gerador de contrato</a>
 
   <div id="banner"></div>
+
+  <div class="tabs" id="secaoTabs"></div>
+  <div class="tabs" id="subTabs" hidden></div>
 
   <div class="tabs" id="tabs"></div>
 
@@ -165,6 +170,12 @@
           <option>Notebook</option>
           <option>Notebook Gamer</option>
           <option>MacBook</option>
+          <option>PC Completo</option>
+          <option>Placa-mãe</option>
+          <option>Fonte</option>
+          <option>Gabinete</option>
+          <option>Refrigeração</option>
+          <option>Outras peças</option>
           <option>Outro</option>
         </select>
       </div>
@@ -273,6 +284,7 @@
     confirmDeleteId: null,
     search: "",
     tipo: "",
+    secao: "notebooks",
     fotos: {},
     formFotos: { existentes: [], novas: [], remover: [] },
     ordem: "recentes",
@@ -336,7 +348,7 @@
   }
 
   function renderStats() {
-    var s = computeStats(state.devices);
+    var s = computeStats(devicesDaSecao());
     var tiles = [
       ["Investido em estoque", fmtMoney.format(s.investido), ""],
       ["Valor potencial de venda", fmtMoney.format(s.potencial), "brand"],
@@ -350,8 +362,10 @@
   }
 
   function renderTabs() {
-    var counts = { todos: state.devices.length, preparacao: 0, disponivel: 0, vendido: 0 };
-    state.devices.forEach(function (d) { counts[normalizeStatus(d.status)]++; });
+    var daSecao = devicesDaSecao();
+    var counts = { todos: daSecao.length, preparacao: 0, disponivel: 0, vendido: 0 };
+    daSecao.forEach(function (d) { counts[normalizeStatus(d.status)]++; });
+    renderSecoes();
     var defs = [["preparacao", "Em preparação"], ["disponivel", "Disponível"], ["vendido", "Vendido"], ["todos", "Todos"]];
     document.getElementById("tabs").innerHTML = defs.map(function (t) {
       var active = state.filterStatus === t[0] ? " active" : "";
@@ -359,17 +373,52 @@
     }).join("");
   }
 
+  var PC_SUBS = [["", "Todas as peças"], ["pc-completo", "PC completo"], ["placa-mae", "Placa-mãe"], ["fonte", "Fonte"], ["gabinete", "Gabinete"], ["refrigeracao", "Refrigeração"], ["outras", "Outras peças"]];
+
+  function semAcento(s) { return String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase(); }
+
   function categoriaTipo(d) {
-    var t = String(d.tipo || "") + " " + String(d.modelo || "");
-    if (/macbook/i.test(t)) return "macbook";
-    if (/gamer|gaming|legion|nitro|predator|\brog\b|\btuf\b|alienware|victus|\bloq\b/i.test(t)) return "gamer";
+    var tp = semAcento(d.tipo);
+    if (/^placa.?mae/.test(tp)) return "placa-mae";
+    if (/^fonte/.test(tp)) return "fonte";
+    if (/^gabinete/.test(tp)) return "gabinete";
+    if (/^(refrigeracao|cooler|water)/.test(tp)) return "refrigeracao";
+    if (/^(pc|computador|desktop)/.test(tp)) return "pc-completo";
+    if (/^(outras? pecas?|peca)/.test(tp)) return "outras";
+    var t = tp + " " + semAcento(d.modelo);
+    if (/macbook/.test(t)) return "macbook";
+    if (/gamer|gaming|legion|nitro|predator|\brog\b|\btuf\b|alienware|victus|\bloq\b/.test(t)) return "gamer";
     return "notebook";
   }
+
+  function secaoDe(d) { return ["notebook", "gamer", "macbook"].indexOf(categoriaTipo(d)) >= 0 ? "notebooks" : "pcs"; }
+
+  function renderSecoes() {
+    var nb = 0, pc = 0, sub = {};
+    state.devices.forEach(function (d) {
+      if (normalizeStatus(d.status) === "vendido") return;
+      if (secaoDe(d) === "notebooks") nb++;
+      else { pc++; var c = categoriaTipo(d); sub[c] = (sub[c] || 0) + 1; }
+    });
+    document.getElementById("secaoTabs").innerHTML = [["notebooks", "💻 Notebooks e MacBooks", nb], ["pcs", "🖥️ PCs e peças", pc]].map(function (t) {
+      return '<button class="tab secao-tab' + (state.secao === t[0] ? " active" : "") + '" data-secao="' + t[0] + '">' + t[1] + ' <span class="n">' + t[2] + "</span></button>";
+    }).join("");
+    var st = document.getElementById("subTabs");
+    st.hidden = state.secao !== "pcs";
+    st.innerHTML = PC_SUBS.map(function (t) {
+      var n = t[0] ? (sub[t[0]] || 0) : pc;
+      return '<button class="tab' + (state.tipo === t[0] ? " active" : "") + '" data-sub="' + t[0] + '">' + t[1] + ' <span class="n">' + n + "</span></button>";
+    }).join("");
+    document.getElementById("filtroTipo").hidden = state.secao === "pcs";
+  }
+
+  function devicesDaSecao() { return state.devices.filter(function (d) { return secaoDe(d) === state.secao; }); }
 
   function filteredDevices() {
     var q = state.search.trim().toLowerCase();
     return state.devices.filter(function (d) {
       if (state.filterStatus !== "todos" && normalizeStatus(d.status) !== state.filterStatus) return false;
+      if (secaoDe(d) !== state.secao) return false;
       if (state.tipo && categoriaTipo(d) !== state.tipo) return false;
       if (!q) return true;
       var hay = [d.modelo, d.processador, d.numeroSerie, d.armazenamento, d.ram].join(" ").toLowerCase();
@@ -585,12 +634,48 @@
 
   // ---------- form ----------
 
+  // Campos do formulário mudam de nome conforme o tipo (peças de PC não têm "RAM", etc.)
+  var CAMPOS_PADRAO = null;
+  var CAMPOS_PECAS = {
+    "placa-mae": [["Soquete / chipset", "Ex: AM4 B450"], ["Memória suportada", "Ex: DDR4 até 64GB"], ["Formato", "Ex: ATX"], null],
+    "fonte": [["Potência", "Ex: 650W"], ["Certificação", "Ex: 80 Plus Bronze"], ["Cabos", "Ex: Modular / não modular"], null],
+    "gabinete": [["Formato", "Ex: ATX / Mid Tower"], ["Cor e lateral", "Ex: Preto, vidro temperado"], ["Ventoinhas", "Ex: 3 inclusas"], null],
+    "refrigeracao": [["Tipo", "Ex: Air cooler / Water cooler 240mm"], ["Soquetes compatíveis", "Ex: AM4, LGA1200"], ["Tamanho / ventoinhas", "Ex: 120mm RGB"], null],
+    "outras": [["Tipo de peça", "Ex: SSD NVMe / Memória RAM"], ["Capacidade / velocidade", "Ex: 512GB / 3200MHz"], ["Interface", "Ex: M.2 / DDR4"], null]
+  };
+  var CAMPOS_IDS = ["f-processador", "f-ram", "f-armazenamento", "f-gpu"];
+
+  function aplicarCamposPorTipo() {
+    if (!CAMPOS_PADRAO) {
+      CAMPOS_PADRAO = CAMPOS_IDS.map(function (id) {
+        var el = document.getElementById(id);
+        return [el.previousElementSibling.textContent, el.placeholder];
+      });
+    }
+    var cat = categoriaTipo({ tipo: document.getElementById("f-tipo").value });
+    var map = CAMPOS_PECAS[cat] || CAMPOS_PADRAO.concat();
+    CAMPOS_IDS.forEach(function (id, i) {
+      var el = document.getElementById(id), def = map[i];
+      var oculto = def === null;
+      el.parentElement.hidden = oculto;
+      if (oculto) { el.value = ""; return; }
+      el.previousElementSibling.textContent = def[0];
+      el.placeholder = def[1];
+    });
+  }
+
+  function tipoInicialNovo() {
+    if (state.secao !== "pcs") return "Notebook";
+    var m = { "placa-mae": "Placa-mãe", "fonte": "Fonte", "gabinete": "Gabinete", "refrigeracao": "Refrigeração", "outras": "Outras peças" };
+    return m[state.tipo] || "PC Completo";
+  }
+
   function openForm(device) {
     state.editingId = device ? device.id : null;
     resetFormFotos(device);
     document.getElementById("formTitle").textContent = device ? "Editar aparelho" : "Novo aparelho";
     document.getElementById("f-modelo").value = device ? device.modelo || "" : "";
-    document.getElementById("f-tipo").value = device ? device.tipo || "Notebook" : "Notebook";
+    document.getElementById("f-tipo").value = device ? device.tipo || "Notebook" : tipoInicialNovo();
     document.getElementById("f-condicao").value = device ? device.condicao || "Usado" : "Usado";
     document.getElementById("f-processador").value = device ? device.processador || "" : "";
     document.getElementById("f-ram").value = device ? device.ram || "" : "";
@@ -601,6 +686,7 @@
     document.getElementById("f-dataEntrada").value = device ? device.dataEntrada || todayISO() : todayISO();
     document.getElementById("f-serial").value = device ? device.numeroSerie || "" : "";
     document.getElementById("f-observacoes").value = device ? device.observacoes || "" : "";
+    aplicarCamposPorTipo();
     document.getElementById("formPanel").hidden = false;
     document.getElementById("formPanel").scrollIntoView({ behavior: "smooth", block: "start" });
     document.getElementById("f-modelo").focus();
@@ -766,11 +852,26 @@
     renderFormFotos();
   });
 
+  document.getElementById("f-tipo").addEventListener("change", aplicarCamposPorTipo);
   document.getElementById("btnNew").addEventListener("click", function () { openForm(null); });
   document.getElementById("btnCancel").addEventListener("click", closeForm);
   document.getElementById("btnSave").addEventListener("click", saveForm);
   document.getElementById("btnExport").addEventListener("click", exportCsv);
   document.getElementById("btnRefresh").addEventListener("click", loadDevices);
+  document.getElementById("secaoTabs").addEventListener("click", function (e) {
+    var b = e.target.closest("button[data-secao]");
+    if (!b) return;
+    state.secao = b.getAttribute("data-secao");
+    state.tipo = "";
+    document.getElementById("filtroTipo").value = "";
+    renderAll();
+  });
+  document.getElementById("subTabs").addEventListener("click", function (e) {
+    var b = e.target.closest("button[data-sub]");
+    if (!b) return;
+    state.tipo = b.getAttribute("data-sub");
+    renderAll();
+  });
   document.getElementById("filtroTipo").addEventListener("change", function (e) { state.tipo = e.target.value; renderList(); });
   document.getElementById("ordem").addEventListener("change", function (e) { state.ordem = e.target.value; renderList(); });
   document.getElementById("search").addEventListener("input", function (e) {
@@ -815,10 +916,10 @@
   // ---------- lista pro WhatsApp (só modelo, specs e preço de venda; nunca custo) ----------
 
   function montarListaWhats() {
-    var disp = state.devices.filter(function (d) { return d.status === "disponivel"; })
+    var disp = state.devices.filter(function (d) { return d.status === "disponivel" && secaoDe(d) === state.secao; })
       .sort(function (a, b) { return (Number(a.venda) || 0) - (Number(b.venda) || 0); });
     if (!disp.length) return "";
-    var linhas = ["*FIORE STORE - Notebooks disponíveis* 💻", ""];
+    var linhas = [state.secao === "pcs" ? "*FIORE STORE - PCs e peças disponíveis* 🖥️" : "*FIORE STORE - Notebooks disponíveis* 💻", ""];
     disp.forEach(function (d, i) {
       var specs = [d.condicao, d.processador, d.ram, d.armazenamento, d.gpu].filter(Boolean).join(" • ");
       linhas.push("*" + (i + 1) + ") " + (d.modelo || "Aparelho") + "*");

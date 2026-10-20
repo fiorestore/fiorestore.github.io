@@ -98,6 +98,23 @@
   function fotoUrl(fileId, w) { return 'https://drive.google.com/thumbnail?id=' + encodeURIComponent(fileId) + '&sz=w' + w; }
   function comGB(v) { v = String(v || '').trim(); return /^\d+$/.test(v) ? v + 'GB' : v; }
 
+  var CAMPOS_PECAS = {
+    'placa-mae': ['Soquete / chipset', 'Memória suportada', 'Formato'],
+    'fonte': ['Potência', 'Certificação', 'Cabos'],
+    'gabinete': ['Formato', 'Cor e lateral', 'Ventoinhas'],
+    'refrigeracao': ['Tipo', 'Soquetes compatíveis', 'Tamanho / ventoinhas'],
+    'outras': ['Tipo de peça', 'Capacidade / velocidade', 'Interface']
+  };
+  function categoriaPeca(tipo) {
+    var t = String(tipo || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    if (/^placa.?mae/.test(t)) return 'placa-mae';
+    if (/^fonte/.test(t)) return 'fonte';
+    if (/^gabinete/.test(t)) return 'gabinete';
+    if (/^(refrigeracao|cooler|water)/.test(t)) return 'refrigeracao';
+    if (/^(outras? pecas?|peca)/.test(t)) return 'outras';
+    return '';
+  }
+
   function mostrarErro(msg) {
     var el = $('estado');
     el.textContent = msg;
@@ -137,13 +154,14 @@
     document.title = p.modelo + ' · Fiore Store';
     $('modelo').textContent = p.modelo;
     $('preco').textContent = fmtMoney.format(p.venda);
-    $('precoNota').textContent = p.condicao ? 'Aparelho ' + String(p.condicao).toLowerCase() : '';
+    $('precoNota').textContent = p.condicao ? 'Produto ' + String(p.condicao).toLowerCase() : '';
 
     $('chips').innerHTML = [p.tipo, p.condicao].filter(Boolean).map(function (c) { return '<span class="chip">' + esc(c) + '</span>'; }).join('');
 
-    var linhas = [
+    var peca = CAMPOS_PECAS[categoriaPeca(p.tipo)];
+    var linhas = (peca ? [[peca[0], p.processador], [peca[1], p.ram], [peca[2], p.armazenamento]] : [
       ['Processador', p.processador], ['Memória RAM', comGB(p.ram)], ['Armazenamento', p.armazenamento], ['Placa de vídeo', p.gpu]
-    ].filter(function (l) { return l[1]; });
+    ]).filter(function (l) { return l[1]; });
     $('specs').innerHTML = linhas.map(function (l) { return '<dt>' + esc(l[0]) + '</dt><dd>' + esc(l[1]) + '</dd>'; }).join('');
 
     if (p.observacoes) { $('obs').textContent = p.observacoes; $('obs').hidden = false; }
@@ -151,11 +169,11 @@
     var status = String(p.status || '').toLowerCase();
     var aviso = $('aviso'), btn = $('btnWhats');
     if (status === 'vendido') {
-      aviso.innerHTML = '<div class="aviso vendido">Este aparelho já foi vendido. Chame a gente para ver o que temos disponível.</div>';
+      aviso.innerHTML = '<div class="aviso vendido">Este produto já foi vendido. Chame a gente para ver o que temos disponível.</div>';
       btn.textContent = '💬 Ver outros modelos no WhatsApp';
       btn.href = 'https://wa.me/' + WHATSAPP_LOJA + '?text=' + encodeURIComponent('Olá! Vi o anúncio do ' + p.modelo + ', mas ele já foi vendido. O que vocês têm disponível?');
     } else {
-      if (status !== 'disponivel') aviso.innerHTML = '<div class="aviso breve">Este aparelho está em preparação. Fale com a gente para saber a previsão.</div>';
+      if (status !== 'disponivel') aviso.innerHTML = '<div class="aviso breve">Este produto está em preparação. Fale com a gente para saber a previsão.</div>';
       btn.href = 'https://wa.me/' + WHATSAPP_LOJA + '?text=' + encodeURIComponent(mensagemWhats(p));
     }
 
