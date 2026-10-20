@@ -25,6 +25,27 @@
 
   .pc-comp { margin-top:12px; display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:6px 14px; font-size:13.5px; }
   .pc-comp .k { display:block; color:var(--muted); font-size:11.5px; font-weight:600; text-transform:uppercase; letter-spacing:.03em; }
+  /* ---- etiqueta 33x21 mm ---- */
+  .etq { --k:1; width:33mm; height:21mm; box-sizing:border-box; padding:0.9mm 1.2mm; display:flex; flex-direction:column; overflow:hidden; background:#fff; color:#000; font-family:Arial,Helvetica,sans-serif; }
+  .etq-modelo { font-weight:700; font-size:calc(7.2pt * var(--k)); line-height:1.1; text-transform:uppercase; max-height:calc(2.2em); overflow:hidden; word-break:break-word; }
+  .etq-cfg { flex:1; min-height:0; margin-top:0.5mm; font-size:calc(6.2pt * var(--k)); line-height:1.15; overflow:hidden; word-break:break-word; }
+  .etq-preco { font-weight:800; font-size:calc(11.5pt * var(--k)); line-height:1; text-align:right; white-space:nowrap; }
+  .etq-overlay { position:fixed; inset:0; background:rgba(0,0,0,.45); display:flex; align-items:center; justify-content:center; padding:16px; z-index:110; }
+  .etq-overlay[hidden] { display:none; }
+  .etq-modal { background:var(--card); border-radius:14px; width:100%; max-width:420px; padding:20px; box-shadow:0 10px 30px rgba(0,0,0,.25); }
+  .etq-modal h2 { margin:0 0 12px; font-size:16px; }
+  .etq-preview { width:100%; aspect-ratio:33 / 21; margin:0 auto 14px; border:1px dashed var(--border); background:#fff; overflow:hidden; }
+  .etq-preview .etq { transform:scale(var(--sc, 3)); transform-origin:0 0; }
+  .etq-dica { color:var(--muted); font-size:12.5px; line-height:1.5; margin:0 0 12px; }
+  .etq-acoes { display:flex; gap:8px; }
+  .etq-acoes .btn { flex:1; text-align:center; }
+  #etqPrintRoot { position:fixed; left:-300mm; top:0; }
+  @media print {
+    @page { size:33mm 21mm; margin:0; }
+    html, body { margin:0 !important; padding:0 !important; background:#fff !important; width:33mm; height:21mm; overflow:hidden; }
+    body > *:not(#etqPrintRoot) { display:none !important; }
+    #etqPrintRoot { position:static; display:block; }
+  }
   .secao-tab { font-size:14.5px; padding:11px 16px; }
   #subTabs { margin-top:-6px; }
   .tabs { display:flex; gap:6px; margin-bottom:16px; overflow-x:auto; -webkit-overflow-scrolling:touch; }
@@ -138,6 +159,18 @@
   </div>
 </div>
 
+<div class="etq-overlay" id="etqOverlay" hidden>
+  <div class="etq-modal">
+    <h2>🏷️ Etiqueta 33 × 21 mm</h2>
+    <div class="etq-preview" id="etqPreview"></div>
+    <p class="etq-dica">Na janela de impressão, escolha a impressora de etiquetas, o papel <b>33 × 21 mm</b>, margens <b>nenhuma</b> e escala <b>100%</b>.</p>
+    <div class="etq-acoes">
+      <button class="btn btn-ghost" id="etqFechar">Fechar</button>
+      <button class="btn btn-principal" id="etqImprimir">🖨️ Imprimir etiqueta</button>
+    </div>
+  </div>
+</div>
+<div id="etqPrintRoot"></div>
 <script>
 (function () {
   "use strict";
@@ -367,6 +400,54 @@
     return pcCompHtml(d) + (t ? '<div class="obs">' + escapeHtml(t) + "</div>" : "");
   }
 
+  // ---------- etiqueta 33x21 mm ----------
+  function etqTitulo(d) {
+    return String(d.modelo || "").split(/\s+-\s+/)[0].replace(/^NOTEBOOK\s+/i, "").trim() || "Aparelho";
+  }
+
+  function etqConfig(d) {
+    var ram = /^\d+$/.test(String(d.ram || "").trim()) ? String(d.ram).trim() + "GB" : d.ram;
+    return [d.processador, ram, d.armazenamento, d.gpu].filter(Boolean).join(" · ");
+  }
+
+  function etqPreco(d) {
+    var v = Number(d.venda) || 0;
+    return "R$ " + v.toLocaleString("pt-BR", { minimumFractionDigits: v % 1 ? 2 : 0, maximumFractionDigits: 2 });
+  }
+
+  function etqHtml(d, k) {
+    return '<div class="etq" style="--k:' + k + '"><div class="etq-modelo">' + escapeHtml(etqTitulo(d)) + "</div>" +
+      '<div class="etq-cfg">' + escapeHtml(etqConfig(d)) + "</div>" +
+      '<div class="etq-preco">' + escapeHtml(etqPreco(d)) + "</div></div>";
+  }
+
+  // Encolhe a fonte até o texto caber dentro dos 33x21 mm
+  function etqEscala(d) {
+    var root = document.getElementById("etqPrintRoot");
+    var k = 1;
+    for (; k > 0.55; k = Math.round((k - 0.05) * 100) / 100) {
+      root.innerHTML = etqHtml(d, k);
+      var m = root.querySelector(".etq-modelo"), c = root.querySelector(".etq-cfg");
+      if (m.scrollHeight <= m.clientHeight + 1 && c.scrollHeight <= c.clientHeight + 1) break;
+    }
+    return k;
+  }
+
+  function abrirEtiqueta(id) {
+    var d = state.devices.find(function (x) { return x.id === id; });
+    if (!d) { toast("Aparelho não encontrado."); return; }
+    var k = etqEscala(d);
+    document.getElementById("etqPrintRoot").innerHTML = etqHtml(d, k);
+    document.getElementById("etqPreview").innerHTML = etqHtml(d, k);
+    document.getElementById("etqOverlay").hidden = false;
+    var prev = document.getElementById("etqPreview");
+    prev.style.setProperty("--sc", prev.clientWidth / (33 * 96 / 25.4));
+  }
+
+  document.getElementById("etqFechar").addEventListener("click", function () { document.getElementById("etqOverlay").hidden = true; });
+  document.getElementById("etqOverlay").addEventListener("click", function (e) { if (e.target === this) this.hidden = true; });
+  document.getElementById("etqImprimir").addEventListener("click", function () { window.print(); });
+
   function renderDevice(d) {
     var status = normalizeStatus(d.status);
     var chips = [d.tipo, d.condicao, d.processador, d.ram, d.armazenamento, d.gpu]
@@ -399,7 +480,7 @@
       fotosHtml(d) +
       '<div class="preco"><div class="k">Preço</div><div class="v">' + fmtMoney.format(Number(d.venda) || 0) + "</div></div>" +
       obsHtml(d) +
-      '<div class="device-actions">' + moveBtns + "</div>" +
+      '<div class="device-actions">' + '<button class="btn btn-ghost btn-sm" data-act="etiqueta" data-id="' + d.id + '">🏷️ Etiqueta</button>' + moveBtns + "</div>" +
       "</div>"
     );
   }
@@ -486,6 +567,7 @@
     var act = btn.getAttribute("data-act");
     var id = btn.getAttribute("data-id");
     if (act === "copy-link") copiarLink(id);
+    else if (act === "etiqueta") abrirEtiqueta(id);
     else if (act === "to-preparacao") setStatus(id, "preparacao", "", "Voltou para preparação.");
     else if (act === "to-disponivel") setStatus(id, "disponivel", "", "Marcado como disponível.");
     else if (act === "to-vendido") setStatus(id, "vendido", todayISO(), "Marcado como vendido.");
