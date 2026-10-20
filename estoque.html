@@ -30,6 +30,9 @@
   .stat .v.success { color:var(--success); }
   .stat .v.brand { color:var(--primary); }
 
+  .tipo-chips { display:flex; flex-wrap:wrap; gap:8px; margin:6px 0 14px; }
+  .tipo-chip { padding:10px 14px; border:1px solid var(--border); border-radius:10px; background:var(--card); color:var(--muted); font-size:13.5px; font-weight:600; font-family:inherit; cursor:pointer; }
+  .tipo-chip.active { background:var(--primary); border-color:var(--primary); color:#fff; }
   .secao-tab { font-size:14.5px; padding:11px 16px; }
   #subTabs { margin-top:-6px; }
   .tabs { display:flex; gap:6px; margin-bottom:16px; overflow-x:auto; -webkit-overflow-scrolling:touch; }
@@ -163,8 +166,11 @@
     <label>Modelo</label>
     <input id="f-modelo" placeholder="Ex: MacBook Air M1 2020 13&quot;">
 
+    <label>Tipo de produto</label>
+    <div class="tipo-chips" id="tipoChips"></div>
+
     <div class="row2">
-      <div>
+      <div hidden>
         <label>Tipo</label>
         <select id="f-tipo">
           <option>Notebook</option>
@@ -664,6 +670,22 @@
     });
   }
 
+  // Opções de tipo mostradas no cadastro: só as da seção em que o produto está
+  var TIPOS_SECAO = {
+    notebooks: ["Notebook", "Notebook Gamer", "MacBook", "Outro"],
+    pcs: ["PC Completo", "Placa-mãe", "Fonte", "Gabinete", "Refrigeração", "Outras peças"]
+  };
+
+  function renderTipoChips(secao) {
+    var atual = document.getElementById("f-tipo").value;
+    var lista = TIPOS_SECAO[secao].slice();
+    if (atual && lista.indexOf(atual) < 0) lista.push(atual);
+    document.getElementById("tipoChips").innerHTML = lista.map(function (t) {
+      return '<button type="button" class="tipo-chip' + (t === atual ? " active" : "") + '" data-tipo="' + escapeHtml(t) + '">' + escapeHtml(t) + "</button>";
+    }).join("");
+    document.getElementById("tipoChips").setAttribute("data-secao", secao);
+  }
+
   function tipoInicialNovo() {
     if (state.secao !== "pcs") return "Notebook";
     var m = { "placa-mae": "Placa-mãe", "fonte": "Fonte", "gabinete": "Gabinete", "refrigeracao": "Refrigeração", "outras": "Outras peças" };
@@ -687,6 +709,7 @@
     document.getElementById("f-serial").value = device ? device.numeroSerie || "" : "";
     document.getElementById("f-observacoes").value = device ? device.observacoes || "" : "";
     aplicarCamposPorTipo();
+    renderTipoChips(device ? secaoDe(device) : state.secao);
     document.getElementById("formPanel").hidden = false;
     document.getElementById("formPanel").scrollIntoView({ behavior: "smooth", block: "start" });
     document.getElementById("f-modelo").focus();
@@ -730,7 +753,12 @@
       var ff = state.formFotos;
       closeForm();
       toast(isNew ? "Aparelho adicionado na aba Em preparação." : "Aparelho atualizado.");
-      if (isNew) state.filterStatus = "preparacao";
+      if (isNew) {
+        state.filterStatus = "preparacao";
+        state.secao = secaoDe({ tipo: data.tipo, modelo: data.modelo });
+        state.tipo = "";
+        document.getElementById("filtroTipo").value = "";
+      }
       if (!deviceId || (!ff.novas.length && !ff.remover.length)) { loadDevices(); return; }
       return salvarFotos(deviceId, ff).then(function (erros) {
         if (erros) toast(erros + " foto(s) não puderam ser enviadas. Tente de novo pelo botão Editar.");
@@ -853,6 +881,14 @@
   });
 
   document.getElementById("f-tipo").addEventListener("change", aplicarCamposPorTipo);
+  document.getElementById("tipoChips").addEventListener("click", function (e) {
+    var b = e.target.closest("button[data-tipo]");
+    if (!b) return;
+    var sel = document.getElementById("f-tipo");
+    sel.value = b.getAttribute("data-tipo");
+    aplicarCamposPorTipo();
+    renderTipoChips(document.getElementById("tipoChips").getAttribute("data-secao"));
+  });
   document.getElementById("btnNew").addEventListener("click", function () { openForm(null); });
   document.getElementById("btnCancel").addEventListener("click", closeForm);
   document.getElementById("btnSave").addEventListener("click", saveForm);
