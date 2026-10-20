@@ -1026,11 +1026,22 @@
 
   // ---------- lista pro WhatsApp (só modelo, specs e preço de venda; nunca custo) ----------
 
+  // Título da mensagem conforme o filtro de tipo em uso (ex.: só MacBooks)
+  function tituloLista() {
+    var t = {
+      "macbook": "MacBooks disponíveis 💻", "gamer": "Notebooks Gamer disponíveis 🎮", "notebook": "Notebooks disponíveis 💻",
+      "pc-completo": "PCs disponíveis 🖥️", "placa-mae": "Placas-mãe disponíveis 🖥️", "fonte": "Fontes disponíveis 🖥️",
+      "gabinete": "Gabinetes disponíveis 🖥️", "refrigeracao": "Refrigeração disponível 🖥️", "outras": "Peças disponíveis 🖥️"
+    };
+    if (state.tipo && t[state.tipo]) return t[state.tipo];
+    return state.secao === "pcs" ? "PCs e peças disponíveis 🖥️" : "Notebooks e MacBooks disponíveis 💻";
+  }
+
   function montarListaWhats() {
-    var disp = state.devices.filter(function (d) { return d.status === "disponivel" && secaoDe(d) === state.secao; })
+    var disp = state.devices.filter(function (d) { return d.status === "disponivel" && secaoDe(d) === state.secao && (!state.tipo || categoriaTipo(d) === state.tipo); })
       .sort(function (a, b) { return (Number(a.venda) || 0) - (Number(b.venda) || 0); });
     if (!disp.length) return "";
-    var linhas = [state.secao === "pcs" ? "*FIORE STORE - PCs e peças disponíveis* 🖥️" : "*FIORE STORE - Notebooks disponíveis* 💻", ""];
+    var linhas = ["*FIORE STORE - " + tituloLista() + "*", ""];
     disp.forEach(function (d, i) {
       var specs = [d.condicao, d.processador, d.ram, d.armazenamento, d.gpu].filter(Boolean).join(" • ");
       linhas.push("*" + (i + 1) + ") " + (d.modelo || "Aparelho") + "*");
@@ -1062,7 +1073,7 @@
 
   document.getElementById("btnWhats").addEventListener("click", function () {
     var texto = montarListaWhats();
-    if (!texto) { toast("Nenhum aparelho disponível no momento."); return; }
+    if (!texto) { toast(state.tipo ? "Nenhum aparelho disponível nesse filtro." : "Nenhum aparelho disponível no momento."); return; }
     document.getElementById("wlTexto").value = texto;
     atualizarLinkWhats();
     document.getElementById("wlOverlay").hidden = false;
