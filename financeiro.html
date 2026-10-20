@@ -3,31 +3,594 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
 <title>Financeiro · Fiore Store</title>
 <style>
-  :root { --brand:#FCAD2C; --brand-tint:#FDF1DD; --primary:#A0640A; --primary-dark:#7A4B02; --bg:#FBF8F3; --card:#fff; --text:#1d1d1f; --muted:#6e6e73; --border:#e7ddcb; }
+  :root {
+    --brand:#FCAD2C; --brand-tint:#FDF1DD;
+    --primary:#A0640A; --primary-dark:#7A4B02;
+    --bg:#FBF8F3; --card:#ffffff; --text:#1d1d1f; --muted:#6e6e73;
+    --border:#e7ddcb; --error:#c0392b; --error-tint:#fdecea;
+    --success:#1e7e34; --success-tint:#eaf6ec;
+    --warn:#b25e00; --warn-tint:#fff1dc;
+    --shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
   * { box-sizing:border-box; }
   body { margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif; background:var(--bg); color:var(--text); }
   .header { background:var(--brand); padding:26px 16px 20px; text-align:center; }
   .header h1 { margin:0; color:#fff; font-size:22px; text-shadow:0 1px 2px rgba(0,0,0,0.12); }
-  .wrap { max-width:560px; margin:0 auto; padding:24px 16px 60px; text-align:center; }
-  .backlink { display:block; text-align:center; color:var(--muted); font-size:12.5px; margin-bottom:22px; text-decoration:none; }
+  .wrap { max-width:920px; margin:0 auto; padding:18px 16px 90px; }
+  .backlink { display:block; text-align:center; color:var(--muted); font-size:12.5px; margin-bottom:16px; text-decoration:none; }
   .backlink:hover { color:var(--primary); text-decoration:underline; }
-  .card { background:var(--card); border:1px solid var(--border); border-radius:14px; padding:40px 24px; box-shadow:0 1px 3px rgba(0,0,0,0.08); }
-  .icon { font-size:40px; }
-  h2 { margin:16px 0 8px; font-size:18px; }
-  p { color:var(--muted); font-size:14px; line-height:1.5; margin:0; }
+  [hidden] { display:none !important; }
+
+  .btn { display:inline-block; padding:10px 16px; border-radius:10px; border:1px solid var(--border); background:var(--card); color:var(--text); font-size:14px; font-weight:600; font-family:inherit; cursor:pointer; text-decoration:none; text-align:center; }
+  .btn:disabled { opacity:.55; cursor:default; }
+  .btn-principal { background:var(--primary); border-color:var(--primary); color:#fff; }
+  .btn-secundario { color:var(--primary); border-color:var(--primary); }
+  .btn-ghost { color:var(--muted); }
+  .btn-danger { color:var(--error); border-color:#f0c5bf; }
+  .btn-whats { color:#1a7f3c; border-color:#b7dfc4; }
+  .btn-sm { padding:7px 11px; font-size:12.5px; border-radius:8px; }
+
+  .card { background:var(--card); border:1px solid var(--border); border-radius:14px; box-shadow:var(--shadow); }
+  .login { max-width:380px; margin:30px auto; padding:26px 22px; text-align:center; }
+  .login h2 { margin:0 0 6px; font-size:18px; }
+  .login p { margin:0 0 16px; color:var(--muted); font-size:13.5px; }
+  .login input[type=password] { width:100%; padding:12px; border:1px solid var(--border); border-radius:10px; font-size:16px; margin-bottom:10px; background:var(--bg); }
+  .login label.lembrar { display:flex; gap:8px; align-items:center; justify-content:center; font-size:13px; color:var(--muted); margin-bottom:14px; }
+  .login .erro { color:var(--error); font-size:13px; margin-bottom:10px; min-height:1em; }
+
+  .topbar { display:flex; justify-content:flex-end; gap:8px; margin-bottom:10px; }
+  .tabs { display:flex; gap:6px; margin-bottom:16px; overflow-x:auto; -webkit-overflow-scrolling:touch; }
+  .tab { flex:none; display:flex; align-items:center; gap:7px; padding:10px 14px; border-radius:10px; border:1px solid var(--border); background:var(--card); color:var(--muted); font-size:13.5px; font-weight:600; font-family:inherit; cursor:pointer; }
+  .tab.active { background:var(--primary); border-color:var(--primary); color:#fff; }
+  .tab .n { background:var(--error); color:#fff; border-radius:999px; padding:1px 7px; font-size:11.5px; }
+
+  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px; margin-bottom:16px; }
+  .kpi { padding:14px 16px; }
+  .kpi .k { font-size:12px; color:var(--muted); font-weight:600; text-transform:uppercase; letter-spacing:.03em; }
+  .kpi .v { font-size:19px; font-weight:800; margin-top:4px; font-variant-numeric:tabular-nums; }
+  .kpi.total { grid-column:1 / -1; background:var(--primary); border-color:var(--primary); }
+  .kpi.total .k { color:#f6dfb8; }
+  .kpi.total .v { color:#fff; font-size:32px; }
+  .pos { color:var(--success); } .neg { color:var(--error); } .warn { color:var(--warn); }
+
+  h3.sec { margin:20px 0 10px; font-size:15px; }
+  .alerta { padding:11px 14px; border-radius:10px; font-size:14px; margin-bottom:8px; display:flex; justify-content:space-between; gap:10px; align-items:center; cursor:pointer; }
+  .alerta.atraso { background:var(--error-tint); color:var(--error); }
+  .alerta.breve { background:var(--warn-tint); color:var(--warn); }
+  .alerta b { white-space:nowrap; }
+
+  .linha { display:flex; justify-content:space-between; gap:10px; align-items:center; padding:11px 14px; border-bottom:1px solid var(--border); font-size:14px; }
+  .linha:last-child { border-bottom:0; }
+  .linha .sub { color:var(--muted); font-size:12.5px; margin-top:2px; }
+  .linha .val { font-weight:700; font-variant-numeric:tabular-nums; white-space:nowrap; }
+
+  .barra { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-bottom:12px; }
+  .barra .grow { flex:1 1 160px; }
+  .barra input[type=search] { width:100%; padding:10px 12px; border:1px solid var(--border); border-radius:10px; font-size:14px; background:var(--card); font-family:inherit; }
+  .chips { display:flex; gap:6px; }
+  .chip { padding:8px 12px; border-radius:999px; border:1px solid var(--border); background:var(--card); font-size:13px; font-weight:600; color:var(--muted); cursor:pointer; font-family:inherit; }
+  .chip.active { background:var(--brand-tint); border-color:var(--brand); color:var(--primary-dark); }
+  .resumo-tipo { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:12px; }
+  .resumo-tipo h2 { margin:0; font-size:18px; }
+  .resumo-tipo .tot { font-weight:800; font-size:18px; font-variant-numeric:tabular-nums; }
+
+  .item { padding:14px 16px; margin-bottom:10px; }
+  .item-top { display:flex; justify-content:space-between; gap:12px; align-items:flex-start; }
+  .item .desc { font-weight:700; font-size:15px; }
+  .item .sub { color:var(--muted); font-size:13px; margin-top:3px; }
+  .item .valor { text-align:right; font-weight:800; font-size:17px; font-variant-numeric:tabular-nums; white-space:nowrap; }
+  .item .valor small { display:block; font-weight:500; color:var(--muted); font-size:11.5px; }
+  .tag { display:inline-block; margin-top:8px; padding:4px 9px; border-radius:7px; font-size:12px; font-weight:700; background:#f1ece2; color:var(--muted); }
+  .tag.atraso { background:var(--error-tint); color:var(--error); }
+  .tag.hoje, .tag.breve { background:var(--warn-tint); color:var(--warn); }
+  .tag.ok { background:var(--success-tint); color:var(--success); }
+  .pagtos { margin-top:10px; padding:8px 10px; background:var(--bg); border-radius:8px; font-size:12.5px; color:var(--muted); }
+  .pagtos div { display:flex; justify-content:space-between; gap:8px; align-items:center; padding:2px 0; }
+  .pagtos button { border:0; background:none; color:var(--error); cursor:pointer; font-size:14px; }
+  .acoes { display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
+  .vazio { text-align:center; color:var(--muted); padding:34px 16px; font-size:14px; }
+
+  .cliente-card { padding:12px 14px; margin-bottom:8px; display:flex; justify-content:space-between; gap:10px; align-items:center; cursor:pointer; }
+  .cliente-card b { font-size:14.5px; }
+
+  .banco { padding:16px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; }
+  .banco .nome { font-weight:700; font-size:16px; }
+  .banco .saldo { font-size:22px; font-weight:800; font-variant-numeric:tabular-nums; }
+  .banco .acoes { margin-top:0; }
+
+  .overlay { position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:100; display:flex; align-items:flex-end; justify-content:center; }
+  .sheet { background:var(--card); width:100%; max-width:520px; max-height:92vh; overflow-y:auto; border-radius:18px 18px 0 0; padding:20px 18px 24px; }
+  @media (min-width:640px) { .overlay { align-items:center; } .sheet { border-radius:16px; } }
+  .sheet h2 { margin:0 0 14px; font-size:17px; }
+  .sheet label { display:block; font-size:13px; font-weight:600; margin:12px 0 5px; }
+  .sheet label small { font-weight:400; color:var(--muted); }
+  .sheet input, .sheet select, .sheet textarea { width:100%; padding:11px 12px; border:1px solid var(--border); border-radius:10px; font-size:16px; background:var(--bg); color:var(--text); font-family:inherit; }
+  .sheet textarea { min-height:64px; resize:vertical; }
+  .sheet .row2 { display:flex; gap:10px; } .sheet .row2 > div { flex:1; min-width:0; }
+  .sheet .acoes-form { display:flex; gap:10px; margin-top:20px; } .sheet .acoes-form .btn { flex:1; padding:13px; }
+  .sheet .erro { color:var(--error); font-size:13px; margin-top:10px; min-height:1em; }
+  .sheet .dica { color:var(--muted); font-size:12.5px; margin-top:6px; }
+
+  .toast { position:fixed; left:50%; bottom:24px; transform:translateX(-50%); background:#222; color:#fff; padding:11px 18px; border-radius:10px; font-size:14px; z-index:200; max-width:90vw; }
+  .carregando { text-align:center; color:var(--muted); padding:40px 16px; }
 </style>
 </head>
 <body>
-<div class="header"><h1>Fiore Store</h1></div>
+
+<div class="header"><h1>Financeiro</h1></div>
+
 <div class="wrap">
-  <a class="backlink" href="https://fiorestore.github.io/">&laquo; voltar ao painel</a>
-  <div class="card">
-    <div class="icon">💰</div>
-    <h2>Financeiro</h2>
-    <p>Esse módulo ainda está em construção. Em breve você vai poder controlar entradas, saídas e o caixa da loja por aqui.</p>
+  <a class="backlink" href="https://fiorestore.github.io/">« voltar ao painel</a>
+
+  <div id="login" class="card login" hidden>
+    <h2>🔒 Área restrita</h2>
+    <p>Digite a senha do financeiro para continuar.</p>
+    <input type="password" id="senha" placeholder="Senha" autocomplete="current-password">
+    <label class="lembrar"><input type="checkbox" id="lembrar"> Lembrar neste aparelho</label>
+    <div class="erro" id="loginErro"></div>
+    <button class="btn btn-principal" id="btnEntrar" style="width:100%">Entrar</button>
+  </div>
+
+  <div id="app" hidden>
+    <div class="topbar">
+      <button class="btn btn-ghost btn-sm" id="btnAtualizar">↻ Atualizar</button>
+      <button class="btn btn-ghost btn-sm" id="btnSair">Sair</button>
+    </div>
+    <div class="tabs" id="tabs"></div>
+    <div id="view"><div class="carregando">Carregando…</div></div>
   </div>
 </div>
+
+<div class="overlay" id="overlay" hidden><div class="sheet" id="sheet"></div></div>
+
+<script>
+(function () {
+  "use strict";
+
+  var WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbw22fQo18s_OSnF8zBUGagKBoAk-5b0bymc2XCPcusiaE-IRb2nFfyZsB31ywvqeV5RBA/exec';
+  var CHAVE_SENHA = 'fiore_fin_senha';
+
+  var TIPOS = {
+    pagar: { titulo: "Contas a pagar", novo: "Nova conta a pagar", icone: "📤", acao: "Pagar", pessoa: "Fornecedor / quem recebe", cats: ["Aluguel", "Fornecedor", "Imposto", "Salário", "Internet / telefone", "Energia / água", "Outros"] },
+    receber: { titulo: "Contas a receber", novo: "Nova conta a receber", icone: "📥", acao: "Receber", pessoa: "Cliente / quem paga", cats: ["Venda", "Maquininha", "Assistência", "Outros"] },
+    devendo: { titulo: "Clientes devendo", novo: "Novo cliente devendo", icone: "🧾", acao: "Receber", pessoa: "Cliente", cats: ["Venda a prazo", "Assistência", "Outros"] }
+  };
+
+  var state = {
+    senha: "", bancos: [], lancamentos: [], movimentos: [],
+    tab: "resumo",
+    filtros: { pagar: "abertas", receber: "abertas", devendo: "abertas" },
+    buscas: { pagar: "", receber: "", devendo: "" },
+    extratoBanco: ""
+  };
+
+  var fmtMoney = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
+  function $(id) { return document.getElementById(id); }
+  function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
+  function money(v) { return fmtMoney.format(Number(v) || 0); }
+  function arred(n) { return Math.round((Number(n) || 0) * 100) / 100; }
+
+  function parseMoney(s) {
+    s = String(s || "").trim().replace(/[^\d,.\-]/g, "");
+    if (!s) return 0;
+    if (s.indexOf(",") >= 0) s = s.replace(/\./g, "").replace(",", ".");
+    else if (/^-?\d{1,3}(\.\d{3})+$/.test(s)) s = s.replace(/\./g, "");
+    return arred(parseFloat(s));
+  }
+
+  function hojeISO() {
+    var d = new Date();
+    return d.getFullYear() + "-" + ("0" + (d.getMonth() + 1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2);
+  }
+  function diasAte(iso) {
+    var a = new Date(iso + "T00:00:00"), b = new Date(hojeISO() + "T00:00:00");
+    return Math.round((a - b) / 86400000);
+  }
+  function fmtData(iso) { var p = String(iso || "").split("-"); return p.length === 3 ? p[2] + "/" + p[1] + "/" + p[0] : ""; }
+  function fmtCurta(iso) { var p = String(iso || "").split("-"); return p.length === 3 ? p[2] + "/" + p[1] : ""; }
+  function addMeses(iso, n) {
+    var p = iso.split("-").map(Number), alvo = new Date(p[0], p[1] - 1 + n, 1);
+    var ult = new Date(alvo.getFullYear(), alvo.getMonth() + 1, 0).getDate();
+    return alvo.getFullYear() + "-" + ("0" + (alvo.getMonth() + 1)).slice(-2) + "-" + ("0" + Math.min(p[2], ult)).slice(-2);
+  }
+
+  function toast(msg) {
+    var el = $("toastEl"); if (el) el.remove();
+    el = document.createElement("div"); el.id = "toastEl"; el.className = "toast"; el.textContent = msg;
+    document.body.appendChild(el);
+    setTimeout(function () { if (el.parentNode) el.remove(); }, 3500);
+  }
+
+  // ---------- API (POST: a senha vai no corpo, nunca na URL) ----------
+  function api(payload) {
+    payload.senhaFin = state.senha;
+    return fetch(WEBAPP_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(payload) })
+      .then(function (r) { return r.json(); });
+  }
+
+  function guardarSenha(lembrar) {
+    try { sessionStorage.removeItem(CHAVE_SENHA); localStorage.removeItem(CHAVE_SENHA); (lembrar ? localStorage : sessionStorage).setItem(CHAVE_SENHA, state.senha); } catch (e) {}
+  }
+  function lerSenhaGuardada() {
+    try { return sessionStorage.getItem(CHAVE_SENHA) || localStorage.getItem(CHAVE_SENHA) || ""; } catch (e) { return ""; }
+  }
+  function esquecerSenha() {
+    try { sessionStorage.removeItem(CHAVE_SENHA); localStorage.removeItem(CHAVE_SENHA); } catch (e) {}
+  }
+
+  function carregar() {
+    return api({ action: "fin_listar" }).then(function (res) {
+      if (!res.ok) throw new Error(res.erro || "erro");
+      state.bancos = res.bancos || []; state.lancamentos = res.lancamentos || []; state.movimentos = res.movimentos || [];
+      renderTudo();
+    });
+  }
+
+  // ---------- cálculos ----------
+  function restante(l) { return arred(l.valor - l.valorPago); }
+  function aberta(l) { return restante(l) > 0.004; }
+  function saldoBanco(b) {
+    var s = Number(b.saldoInicial) || 0;
+    state.movimentos.forEach(function (m) { if (m.bancoId === b.id) s += m.tipo === "entrada" ? m.valor : -m.valor; });
+    return arred(s);
+  }
+  function totalBancos() { return arred(state.bancos.reduce(function (s, b) { return s + saldoBanco(b); }, 0)); }
+  function abertas(tipo) { return state.lancamentos.filter(function (l) { return l.tipo === tipo && aberta(l); }); }
+  function somaAberta(tipo) { return arred(abertas(tipo).reduce(function (s, l) { return s + restante(l); }, 0)); }
+  function nomeBanco(id) { var b = state.bancos.filter(function (x) { return x.id === id; })[0]; return b ? b.nome : "(banco excluído)"; }
+  function atrasadas() { return state.lancamentos.filter(function (l) { return aberta(l) && diasAte(l.vencimento) < 0; }); }
+
+  function badgeVenc(l) {
+    if (!aberta(l)) return '<span class="tag ok">✓ ' + (l.tipo === "pagar" ? "Paga" : "Recebida") + "</span>";
+    var d = diasAte(l.vencimento);
+    if (d < 0) return '<span class="tag atraso">Vencida há ' + (-d) + (d === -1 ? " dia" : " dias") + " (" + fmtCurta(l.vencimento) + ")</span>";
+    if (d === 0) return '<span class="tag hoje">Vence hoje</span>';
+    if (d <= 7) return '<span class="tag breve">Vence em ' + d + (d === 1 ? " dia" : " dias") + " (" + fmtCurta(l.vencimento) + ")</span>";
+    return '<span class="tag">Vence em ' + fmtData(l.vencimento) + "</span>";
+  }
+
+  // ---------- telas ----------
+  function renderTabs() {
+    var atr = atrasadas();
+    function n(tipo) { var c = atr.filter(function (l) { return l.tipo === tipo; }).length; return c ? ' <span class="n">' + c + "</span>" : ""; }
+    var defs = [["resumo", "📊 Resumo", ""], ["pagar", "📤 A pagar", n("pagar")], ["receber", "📥 A receber", n("receber")], ["devendo", "🧾 Devendo", n("devendo")], ["bancos", "🏦 Bancos", ""]];
+    $("tabs").innerHTML = defs.map(function (t) {
+      return '<button class="tab' + (state.tab === t[0] ? " active" : "") + '" data-tab="' + t[0] + '">' + t[1] + t[2] + "</button>";
+    }).join("");
+  }
+
+  function renderTudo() {
+    renderTabs();
+    var v = $("view");
+    if (state.tab === "resumo") v.innerHTML = htmlResumo();
+    else if (state.tab === "bancos") v.innerHTML = state.extratoBanco ? htmlExtrato() : htmlBancos();
+    else v.innerHTML = htmlLista(state.tab);
+  }
+
+  function htmlResumo() {
+    var tb = totalBancos(), rec = somaAberta("receber"), dev = somaAberta("devendo"), pag = somaAberta("pagar");
+    var proj = arred(tb + rec + dev - pag);
+    var h = '<div class="grid">' +
+      '<div class="card kpi total"><div class="k">Total em bancos</div><div class="v">' + money(tb) + "</div></div>" +
+      '<div class="card kpi"><div class="k">A receber</div><div class="v pos">' + money(rec) + "</div></div>" +
+      '<div class="card kpi"><div class="k">Clientes devendo</div><div class="v pos">' + money(dev) + "</div></div>" +
+      '<div class="card kpi"><div class="k">A pagar</div><div class="v neg">' + money(pag) + "</div></div>" +
+      '<div class="card kpi"><div class="k">Saldo projetado</div><div class="v ' + (proj >= 0 ? "pos" : "neg") + '">' + money(proj) + "</div></div></div>" +
+      '<div style="color:var(--muted);font-size:12.5px;margin:-6px 0 14px">Saldo projetado = bancos + a receber + clientes devendo − a pagar.</div>';
+
+    var alertas = "";
+    ["pagar", "receber", "devendo"].forEach(function (tipo) {
+      var ab = abertas(tipo), atr = ab.filter(function (l) { return diasAte(l.vencimento) < 0; }), br = ab.filter(function (l) { var d = diasAte(l.vencimento); return d >= 0 && d <= 7; });
+      var soma = function (a) { return arred(a.reduce(function (s, l) { return s + restante(l); }, 0)); };
+      if (atr.length) alertas += '<div class="alerta atraso" data-tab="' + tipo + '"><span>⚠️ ' + atr.length + " em " + TIPOS[tipo].titulo.toLowerCase() + " vencida" + (atr.length > 1 ? "s" : "") + "</span><b>" + money(soma(atr)) + "</b></div>";
+      if (br.length) alertas += '<div class="alerta breve" data-tab="' + tipo + '"><span>⏰ ' + br.length + " em " + TIPOS[tipo].titulo.toLowerCase() + " nos próximos 7 dias</span><b>" + money(soma(br)) + "</b></div>";
+    });
+    if (alertas) h += '<h3 class="sec">Atenção</h3>' + alertas;
+
+    h += '<h3 class="sec">Saldo em cada banco</h3>';
+    if (!state.bancos.length) h += '<div class="card vazio">Nenhum banco cadastrado ainda.<br><br><button class="btn btn-principal" data-tab="bancos">Cadastrar banco</button></div>';
+    else h += '<div class="card">' + state.bancos.map(function (b) {
+      var s = saldoBanco(b);
+      return '<div class="linha"><div><b>' + esc(b.nome) + '</b></div><div class="val ' + (s < 0 ? "neg" : "") + '">' + money(s) + "</div></div>";
+    }).join("") + '<div class="linha" style="background:var(--brand-tint)"><b>Total</b><div class="val">' + money(tb) + "</div></div></div>";
+
+    var prox = state.lancamentos.filter(aberta).sort(function (a, b) { return a.vencimento < b.vencimento ? -1 : 1; }).slice(0, 8);
+    h += '<h3 class="sec">Próximos vencimentos</h3>';
+    if (!prox.length) h += '<div class="card vazio">Nada em aberto. 🎉</div>';
+    else h += '<div class="card">' + prox.map(function (l) {
+      return '<div class="linha" data-tab="' + l.tipo + '" style="cursor:pointer"><div><b>' + TIPOS[l.tipo].icone + " " + esc(l.descricao) + '</b><div class="sub">' + esc(l.pessoa) + " · " + fmtData(l.vencimento) + '</div></div><div class="val ' + (l.tipo === "pagar" ? "neg" : "pos") + '">' + money(restante(l)) + "</div></div>";
+    }).join("") + "</div>";
+    return h;
+  }
+
+  function linkCobranca(l) {
+    var d = String(l.telefone || "").replace(/\D/g, "");
+    if (!d) return "";
+    if (d.length <= 11) d = "55" + d;
+    var msg = "Olá, " + (l.pessoa || "tudo bem") + "! Passando para lembrar do valor em aberto de " + money(restante(l)) + " referente a " + l.descricao + " (vencimento " + fmtData(l.vencimento) + "). Qualquer dúvida estamos à disposição. 😊 Fiore Store";
+    return "https://wa.me/" + d + "?text=" + encodeURIComponent(msg);
+  }
+
+  function htmlItem(l) {
+    var cfg = TIPOS[l.tipo], ab = aberta(l);
+    var pagtos = state.movimentos.filter(function (m) { return m.lancamentoId === l.id; }).sort(function (a, b) { return a.data < b.data ? -1 : 1; });
+    var h = '<div class="card item"><div class="item-top"><div><div class="desc">' + esc(l.descricao) + "</div>" +
+      '<div class="sub">' + esc([l.pessoa, l.categoria].filter(Boolean).join(" · ")) + "</div>" + badgeVenc(l) + "</div>" +
+      '<div class="valor ' + (l.tipo === "pagar" ? "neg" : "pos") + '">' + money(ab ? restante(l) : l.valor) + (l.valorPago > 0 && ab ? "<small>de " + money(l.valor) + "</small>" : "") + "</div></div>";
+    if (l.observacao) h += '<div class="sub" style="margin-top:8px">' + esc(l.observacao) + "</div>";
+    if (pagtos.length) h += '<div class="pagtos">' + pagtos.map(function (m) {
+      return "<div><span>" + fmtData(m.data) + " · " + esc(nomeBanco(m.bancoId)) + " · " + money(m.valor) + '</span><button data-act="del-mov" data-id="' + m.id + '" title="Estornar este pagamento">✕</button></div>';
+    }).join("") + "</div>";
+    h += '<div class="acoes">';
+    if (ab) h += '<button class="btn btn-principal btn-sm" data-act="pagar" data-id="' + l.id + '">' + cfg.acao + "</button>";
+    var wl = ab && l.tipo !== "pagar" ? linkCobranca(l) : "";
+    if (wl) h += '<a class="btn btn-whats btn-sm" target="_blank" rel="noopener" href="' + wl + '">💬 Cobrar</a>';
+    h += '<button class="btn btn-ghost btn-sm" data-act="edit" data-id="' + l.id + '">Editar</button>' +
+      '<button class="btn btn-danger btn-sm" data-act="del" data-id="' + l.id + '">Excluir</button></div></div>';
+    return h;
+  }
+
+  function htmlLista(tipo) {
+    var cfg = TIPOS[tipo], f = state.filtros[tipo], q = (state.buscas[tipo] || "").toLowerCase();
+    var todas = state.lancamentos.filter(function (l) { return l.tipo === tipo; });
+    var lista = todas.filter(function (l) { return f === "todas" || (f === "abertas" ? aberta(l) : !aberta(l)); })
+      .filter(function (l) { return !q || (l.descricao + " " + l.pessoa + " " + l.categoria).toLowerCase().indexOf(q) >= 0; })
+      .sort(function (a, b) {
+        if (aberta(a) !== aberta(b)) return aberta(a) ? -1 : 1;
+        return aberta(a) ? (a.vencimento < b.vencimento ? -1 : 1) : (a.vencimento < b.vencimento ? 1 : -1);
+      });
+    var h = '<div class="resumo-tipo"><h2>' + cfg.icone + " " + cfg.titulo + '</h2><div class="tot ' + (tipo === "pagar" ? "neg" : "pos") + '">' + money(somaAberta(tipo)) + "</div></div>";
+
+    if (tipo === "devendo") {
+      var por = {};
+      abertas("devendo").forEach(function (l) {
+        var k = String(l.pessoa || "(sem nome)").trim().toLowerCase();
+        por[k] = por[k] || { nome: l.pessoa || "(sem nome)", total: 0, qtd: 0 };
+        por[k].total = arred(por[k].total + restante(l)); por[k].qtd++;
+      });
+      var cli = Object.keys(por).map(function (k) { return por[k]; }).sort(function (a, b) { return b.total - a.total; });
+      if (cli.length) h += '<h3 class="sec" style="margin-top:0">Quem está devendo</h3>' + cli.map(function (c) {
+        return '<div class="card cliente-card" data-act="filtrar-cliente" data-nome="' + esc(c.nome) + '"><div><b>' + esc(c.nome) + '</b><div class="sub" style="color:var(--muted);font-size:12.5px">' + c.qtd + (c.qtd > 1 ? " lançamentos" : " lançamento") + '</div></div><div class="val neg" style="font-weight:800">' + money(c.total) + "</div></div>";
+      }).join("");
+    }
+
+    h += '<div class="barra"><button class="btn btn-principal" data-act="novo" data-tipo="' + tipo + '">+ ' + cfg.novo.replace(/^(Nova|Novo) /, "") + "</button>" +
+      '<div class="grow"><input type="search" id="busca" placeholder="Buscar…" value="' + esc(state.buscas[tipo]) + '"></div>' +
+      '<div class="chips">' + [["abertas", "Abertas"], ["pagas", tipo === "pagar" ? "Pagas" : "Recebidas"], ["todas", "Todas"]].map(function (c) {
+        return '<button class="chip' + (f === c[0] ? " active" : "") + '" data-act="filtro" data-f="' + c[0] + '">' + c[1] + "</button>";
+      }).join("") + "</div></div>";
+    h += lista.length ? lista.map(htmlItem).join("") : '<div class="card vazio">Nada por aqui.</div>';
+    return h;
+  }
+
+  function htmlBancos() {
+    var tb = totalBancos();
+    var h = '<div class="card kpi total" style="margin-bottom:14px"><div class="k">Total em bancos</div><div class="v">' + money(tb) + "</div></div>" +
+      '<div class="barra"><button class="btn btn-principal" data-act="novo-banco">+ Novo banco</button>' +
+      '<button class="btn btn-secundario" data-act="mov" data-tipo="entrada">➕ Entrada</button>' +
+      '<button class="btn btn-secundario" data-act="mov" data-tipo="saida">➖ Saída</button>' +
+      '<button class="btn btn-secundario" data-act="transferir">⇄ Transferir</button></div>';
+    if (!state.bancos.length) return h + '<div class="card vazio">Cadastre seus bancos e caixas (ex.: Nubank, Itaú, Stone, Caixa da loja) com o saldo de hoje.</div>';
+    return h + state.bancos.map(function (b) {
+      var s = saldoBanco(b);
+      return '<div class="card banco"><div><div class="nome">' + esc(b.nome) + '</div><div class="saldo ' + (s < 0 ? "neg" : "") + '">' + money(s) + '</div></div><div class="acoes">' +
+        '<button class="btn btn-secundario btn-sm" data-act="extrato" data-id="' + b.id + '">Extrato</button>' +
+        '<button class="btn btn-ghost btn-sm" data-act="edit-banco" data-id="' + b.id + '">Editar</button>' +
+        '<button class="btn btn-danger btn-sm" data-act="del-banco" data-id="' + b.id + '">Excluir</button></div></div>';
+    }).join("");
+  }
+
+  function htmlExtrato() {
+    var b = state.bancos.filter(function (x) { return x.id === state.extratoBanco; })[0];
+    if (!b) { state.extratoBanco = ""; return htmlBancos(); }
+    var movs = state.movimentos.filter(function (m) { return m.bancoId === b.id; }).sort(function (a, c) { return a.data === c.data ? (a.criadoEm < c.criadoEm ? 1 : -1) : (a.data < c.data ? 1 : -1); });
+    var s = saldoBanco(b);
+    var h = '<div class="barra"><button class="btn btn-ghost" data-act="voltar-bancos">« Bancos</button></div>' +
+      '<div class="card banco"><div><div class="nome">' + esc(b.nome) + '</div><div class="saldo ' + (s < 0 ? "neg" : "") + '">' + money(s) + '</div></div><div style="color:var(--muted);font-size:13px">Saldo inicial ' + money(b.saldoInicial) + "</div></div>" +
+      '<h3 class="sec">Movimentações</h3>';
+    if (!movs.length) return h + '<div class="card vazio">Nenhuma movimentação neste banco.</div>';
+    return h + '<div class="card">' + movs.map(function (m) {
+      return '<div class="linha"><div><b>' + esc(m.descricao || (m.tipo === "entrada" ? "Entrada" : "Saída")) + '</b><div class="sub">' + fmtData(m.data) + '</div></div><div style="display:flex;gap:10px;align-items:center"><div class="val ' + (m.tipo === "entrada" ? "pos" : "neg") + '">' + (m.tipo === "entrada" ? "+" : "−") + money(m.valor) + '</div><button data-act="del-mov" data-id="' + m.id + '" style="border:0;background:none;color:var(--error);cursor:pointer;font-size:16px" title="Excluir">✕</button></div></div>';
+    }).join("") + "</div>";
+  }
+
+  // ---------- modal ----------
+  function abrir(html) { $("sheet").innerHTML = html; $("overlay").hidden = false; var f = $("sheet").querySelector("input:not([type=hidden]),select,textarea"); if (f && !/iPhone|iPad|Android/.test(navigator.userAgent)) f.focus(); }
+  function fechar() { $("overlay").hidden = true; $("sheet").innerHTML = ""; }
+  function opts(arr, sel) { return arr.map(function (o) { return '<option value="' + esc(o[0]) + '"' + (o[0] === sel ? " selected" : "") + ">" + esc(o[1]) + "</option>"; }).join(""); }
+  function selectBancos(sel) { return opts(state.bancos.map(function (b) { return [b.id, b.nome]; }), sel); }
+  function ultimoBanco() { try { return localStorage.getItem("fiore_fin_ultimo_banco") || ""; } catch (e) { return ""; } }
+  function lembrarBanco(id) { try { localStorage.setItem("fiore_fin_ultimo_banco", id); } catch (e) {} }
+
+  function enviar(botao, payload, aoSucesso) {
+    botao.disabled = true; var txt = botao.textContent; botao.textContent = "Salvando…";
+    $("formErro").textContent = "";
+    api(payload).then(function (res) {
+      if (!res.ok) { $("formErro").textContent = "Erro: " + (res.erro || "não foi possível salvar."); return; }
+      fechar(); if (aoSucesso) aoSucesso(res);
+      return carregar();
+    }).catch(function () { $("formErro").textContent = "Erro de conexão. Tente de novo."; })
+      .then(function () { botao.disabled = false; botao.textContent = txt; });
+  }
+
+  function formLancamento(tipo, item) {
+    var cfg = TIPOS[tipo];
+    var h = "<h2>" + (item ? "Editar" : cfg.novo) + "</h2>" +
+      '<label>Descrição *</label><input id="f-desc" value="' + esc(item ? item.descricao : "") + '" placeholder="' + (tipo === "pagar" ? "Ex: Aluguel da loja" : tipo === "devendo" ? "Ex: Notebook Dell (fiado)" : "Ex: Venda parcelada") + '">' +
+      "<label>" + cfg.pessoa + (tipo === "devendo" ? " *" : "") + '</label><input id="f-pessoa" value="' + esc(item ? item.pessoa : "") + '">';
+    if (tipo !== "pagar") h += '<label>WhatsApp do cliente <small>(para cobrar)</small></label><input id="f-tel" inputmode="tel" value="' + esc(item ? item.telefone : "") + '" placeholder="(19) 99999-9999">';
+    h += '<div class="row2"><div><label>Valor *</label><input id="f-valor" inputmode="decimal" value="' + (item ? String(item.valor).replace(".", ",") : "") + '" placeholder="0,00"></div>' +
+      '<div><label>Vencimento *</label><input id="f-venc" type="date" value="' + esc(item ? item.vencimento : hojeISO()) + '"></div></div>' +
+      '<label>Categoria <small>(opcional)</small></label><input id="f-cat" list="cats" value="' + esc(item ? item.categoria : "") + '"><datalist id="cats">' + cfg.cats.map(function (c) { return '<option value="' + esc(c) + '">'; }).join("") + "</datalist>" +
+      '<label>Observação <small>(opcional)</small></label><textarea id="f-obs">' + esc(item ? item.observacao : "") + "</textarea>";
+    if (!item && tipo !== "devendo") h += '<label>Repetir todo mês <small>(contas fixas)</small></label><select id="f-rep"><option value="1">Não repetir</option>' + [2, 3, 4, 6, 12].map(function (n) { return '<option value="' + n + '">' + n + " meses</option>"; }).join("") + "</select>";
+    h += '<div class="erro" id="formErro"></div><div class="acoes-form"><button class="btn btn-ghost" id="fCancelar">Cancelar</button><button class="btn btn-principal" id="fSalvar">Salvar</button></div>';
+    abrir(h);
+    $("fCancelar").onclick = fechar;
+    $("fSalvar").onclick = function () {
+      var d = { tipo: tipo, descricao: $("f-desc").value.trim(), pessoa: $("f-pessoa").value.trim(), telefone: $("f-tel") ? $("f-tel").value.trim() : "", valor: parseMoney($("f-valor").value), vencimento: $("f-venc").value, categoria: $("f-cat").value.trim(), observacao: $("f-obs").value.trim() };
+      if (!d.descricao) { $("formErro").textContent = "Informe a descrição."; return; }
+      if (tipo === "devendo" && !d.pessoa) { $("formErro").textContent = "Informe o nome do cliente."; return; }
+      if (!(d.valor > 0)) { $("formErro").textContent = "Informe um valor maior que zero."; return; }
+      if (!d.vencimento) { $("formErro").textContent = "Informe o vencimento."; return; }
+      var dados = d;
+      if (item) d.id = item.id;
+      else {
+        var n = $("f-rep") ? parseInt($("f-rep").value, 10) : 1;
+        if (n > 1) { dados = []; for (var i = 0; i < n; i++) { var c = JSON.parse(JSON.stringify(d)); c.vencimento = addMeses(d.vencimento, i); c.descricao = d.descricao + " (" + (i + 1) + "/" + n + ")"; dados.push(c); } }
+      }
+      enviar($("fSalvar"), { action: "fin_salvar", tabela: "lancamentos", dados: dados }, function () { toast(item ? "Atualizado." : "Salvo."); });
+    };
+  }
+
+  function formPagar(l) {
+    if (!state.bancos.length) { toast("Cadastre um banco primeiro (aba Bancos)."); state.tab = "bancos"; renderTudo(); return; }
+    var cfg = TIPOS[l.tipo], ult = ultimoBanco();
+    var sel = state.bancos.some(function (b) { return b.id === ult; }) ? ult : state.bancos[0].id;
+    abrir("<h2>" + cfg.acao + ": " + esc(l.descricao) + "</h2>" +
+      '<div class="dica">Em aberto: <b>' + money(restante(l)) + "</b>" + (l.pessoa ? " · " + esc(l.pessoa) : "") + "</div>" +
+      '<div class="row2"><div><label>Valor</label><input id="f-valor" inputmode="decimal" value="' + String(restante(l)).replace(".", ",") + '"></div>' +
+      '<div><label>Data</label><input id="f-data" type="date" value="' + hojeISO() + '"></div></div>' +
+      "<label>" + (l.tipo === "pagar" ? "Saiu de qual banco?" : "Entrou em qual banco?") + '</label><select id="f-banco">' + selectBancos(sel) + "</select>" +
+      '<div class="dica">Pode ser um valor parcial: o restante continua em aberto.</div>' +
+      '<div class="erro" id="formErro"></div><div class="acoes-form"><button class="btn btn-ghost" id="fCancelar">Cancelar</button><button class="btn btn-principal" id="fSalvar">Confirmar</button></div>');
+    $("fCancelar").onclick = fechar;
+    $("fSalvar").onclick = function () {
+      var v = parseMoney($("f-valor").value);
+      if (!(v > 0)) { $("formErro").textContent = "Informe o valor."; return; }
+      if (v > restante(l) + 0.004) { $("formErro").textContent = "Valor maior que o que está em aberto."; return; }
+      lembrarBanco($("f-banco").value);
+      enviar($("fSalvar"), { action: "fin_pagar", id: l.id, valor: v, bancoId: $("f-banco").value, data: $("f-data").value }, function () { toast(l.tipo === "pagar" ? "Pagamento registrado." : "Recebimento registrado."); });
+    };
+  }
+
+  function formBanco(b) {
+    abrir("<h2>" + (b ? "Editar banco" : "Novo banco") + "</h2>" +
+      '<label>Nome *</label><input id="f-nome" value="' + esc(b ? b.nome : "") + '" placeholder="Ex: Nubank, Itaú, Stone, Caixa da loja">' +
+      "<label>Saldo inicial <small>(quanto tem hoje)</small></label>" + '<input id="f-saldo" inputmode="decimal" value="' + (b ? String(b.saldoInicial).replace(".", ",") : "") + '" placeholder="0,00">' +
+      (b ? '<div class="dica">O saldo atual = saldo inicial + entradas − saídas registradas.</div>' : "") +
+      '<div class="erro" id="formErro"></div><div class="acoes-form"><button class="btn btn-ghost" id="fCancelar">Cancelar</button><button class="btn btn-principal" id="fSalvar">Salvar</button></div>');
+    $("fCancelar").onclick = fechar;
+    $("fSalvar").onclick = function () {
+      var nome = $("f-nome").value.trim();
+      if (!nome) { $("formErro").textContent = "Informe o nome do banco."; return; }
+      var d = { nome: nome, saldoInicial: parseMoney($("f-saldo").value) };
+      if (b) d.id = b.id;
+      enviar($("fSalvar"), { action: "fin_salvar", tabela: "bancos", dados: d }, function () { toast("Banco salvo."); });
+    };
+  }
+
+  function formMov(tipo) {
+    if (!state.bancos.length) { toast("Cadastre um banco primeiro."); return; }
+    var ult = ultimoBanco(), sel = state.bancos.some(function (b) { return b.id === ult; }) ? ult : state.bancos[0].id;
+    abrir("<h2>" + (tipo === "entrada" ? "➕ Entrada de dinheiro" : "➖ Saída de dinheiro") + "</h2>" +
+      "<label>Banco</label><select id=\"f-banco\">" + selectBancos(state.extratoBanco || sel) + "</select>" +
+      '<div class="row2"><div><label>Valor *</label><input id="f-valor" inputmode="decimal" placeholder="0,00"></div><div><label>Data</label><input id="f-data" type="date" value="' + hojeISO() + '"></div></div>' +
+      '<label>Descrição</label><input id="f-desc" placeholder="' + (tipo === "entrada" ? "Ex: Venda no balcão" : "Ex: Compra de material") + '">' +
+      '<div class="erro" id="formErro"></div><div class="acoes-form"><button class="btn btn-ghost" id="fCancelar">Cancelar</button><button class="btn btn-principal" id="fSalvar">Salvar</button></div>');
+    $("fCancelar").onclick = fechar;
+    $("fSalvar").onclick = function () {
+      var v = parseMoney($("f-valor").value);
+      if (!(v > 0)) { $("formErro").textContent = "Informe um valor maior que zero."; return; }
+      lembrarBanco($("f-banco").value);
+      enviar($("fSalvar"), { action: "fin_salvar", tabela: "movimentos", dados: { tipo: tipo, bancoId: $("f-banco").value, valor: v, data: $("f-data").value, descricao: $("f-desc").value.trim() } }, function () { toast("Movimentação registrada."); });
+    };
+  }
+
+  function formTransferir() {
+    if (state.bancos.length < 2) { toast("Cadastre pelo menos 2 bancos para transferir."); return; }
+    abrir("<h2>⇄ Transferir entre bancos</h2>" +
+      '<label>De</label><select id="f-de">' + selectBancos(state.bancos[0].id) + "</select>" +
+      '<label>Para</label><select id="f-para">' + selectBancos(state.bancos[1].id) + "</select>" +
+      '<div class="row2"><div><label>Valor *</label><input id="f-valor" inputmode="decimal" placeholder="0,00"></div><div><label>Data</label><input id="f-data" type="date" value="' + hojeISO() + '"></div></div>' +
+      '<div class="erro" id="formErro"></div><div class="acoes-form"><button class="btn btn-ghost" id="fCancelar">Cancelar</button><button class="btn btn-principal" id="fSalvar">Transferir</button></div>');
+    $("fCancelar").onclick = fechar;
+    $("fSalvar").onclick = function () {
+      var v = parseMoney($("f-valor").value);
+      if (!(v > 0)) { $("formErro").textContent = "Informe um valor maior que zero."; return; }
+      if ($("f-de").value === $("f-para").value) { $("formErro").textContent = "Escolha bancos diferentes."; return; }
+      enviar($("fSalvar"), { action: "fin_transferir", de: $("f-de").value, para: $("f-para").value, valor: v, data: $("f-data").value }, function () { toast("Transferência registrada."); });
+    };
+  }
+
+  function excluir(tabela, id, msg, ok) {
+    if (!window.confirm(msg)) return;
+    api({ action: "fin_excluir", tabela: tabela, id: id }).then(function (res) {
+      if (!res.ok) { toast("Erro: " + (res.erro || "não foi possível excluir.")); return; }
+      toast(ok); return carregar();
+    }).catch(function () { toast("Erro de conexão."); });
+  }
+
+  // ---------- eventos ----------
+  document.addEventListener("click", function (e) {
+    var t = e.target.closest("[data-tab]");
+    if (t && !e.target.closest("[data-act]")) { state.tab = t.getAttribute("data-tab"); state.extratoBanco = ""; renderTudo(); window.scrollTo(0, 0); return; }
+    var b = e.target.closest("[data-act]");
+    if (!b) return;
+    var act = b.getAttribute("data-act"), id = b.getAttribute("data-id");
+    var l = state.lancamentos.filter(function (x) { return x.id === id; })[0];
+    if (act === "novo") formLancamento(b.getAttribute("data-tipo"));
+    else if (act === "edit" && l) formLancamento(l.tipo, l);
+    else if (act === "pagar" && l) formPagar(l);
+    else if (act === "del" && l) excluir("lancamentos", id, "Excluir \"" + l.descricao + "\"? Os pagamentos já feitos continuam no extrato do banco.", "Excluído.");
+    else if (act === "del-mov") {
+      var m = state.movimentos.filter(function (x) { return x.id === id; })[0];
+      excluir("movimentos", id, m && m.lancamentoId ? "Estornar este pagamento? O valor volta a ficar em aberto na conta e o saldo do banco é ajustado." : "Excluir esta movimentação? O saldo do banco será ajustado.", "Movimentação excluída.");
+    }
+    else if (act === "filtro") { state.filtros[state.tab] = b.getAttribute("data-f"); renderTudo(); }
+    else if (act === "filtrar-cliente") { state.buscas.devendo = b.getAttribute("data-nome"); state.filtros.devendo = "abertas"; renderTudo(); window.scrollTo(0, 0); }
+    else if (act === "novo-banco") formBanco();
+    else if (act === "edit-banco") formBanco(state.bancos.filter(function (x) { return x.id === id; })[0]);
+    else if (act === "del-banco") excluir("bancos", id, "Excluir este banco?", "Banco excluído.");
+    else if (act === "extrato") { state.extratoBanco = id; renderTudo(); window.scrollTo(0, 0); }
+    else if (act === "voltar-bancos") { state.extratoBanco = ""; renderTudo(); }
+    else if (act === "mov") formMov(b.getAttribute("data-tipo"));
+    else if (act === "transferir") formTransferir();
+  });
+
+  document.addEventListener("input", function (e) {
+    if (e.target.id === "busca") {
+      state.buscas[state.tab] = e.target.value;
+      var pos = e.target.selectionStart;
+      renderTudo();
+      var n = $("busca"); if (n) { n.focus(); n.setSelectionRange(pos, pos); }
+    }
+  });
+
+  $("overlay").addEventListener("click", function (e) { if (e.target === this) fechar(); });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape") fechar(); });
+  $("btnAtualizar").addEventListener("click", function () { carregar().then(function () { toast("Atualizado."); }).catch(function () { toast("Erro de conexão."); }); });
+  $("btnSair").addEventListener("click", function () { esquecerSenha(); location.reload(); });
+
+  // ---------- entrada com senha ----------
+  function entrar(senha, lembrar, automatico) {
+    state.senha = senha;
+    $("btnEntrar").disabled = true; $("loginErro").textContent = "";
+    return carregar().then(function () {
+      guardarSenha(lembrar);
+      $("login").hidden = true; $("app").hidden = false;
+    }).catch(function (err) {
+      state.senha = "";
+      if (automatico) esquecerSenha();
+      $("login").hidden = false; $("app").hidden = true;
+      $("loginErro").textContent = automatico ? "" : (String(err.message) === "senha invalida" ? "Senha incorreta." : (/tentativas/.test(err.message) ? "Muitas tentativas. Aguarde 10 minutos." : "Não foi possível entrar. Tente de novo."));
+    }).then(function () { $("btnEntrar").disabled = false; });
+  }
+
+  $("btnEntrar").addEventListener("click", function () {
+    var s = $("senha").value;
+    if (!s) { $("loginErro").textContent = "Digite a senha."; return; }
+    entrar(s, $("lembrar").checked, false);
+  });
+  $("senha").addEventListener("keydown", function (e) { if (e.key === "Enter") $("btnEntrar").click(); });
+
+  var guardada = lerSenhaGuardada();
+  if (guardada) { $("app").hidden = false; entrar(guardada, !!(function () { try { return localStorage.getItem(CHAVE_SENHA); } catch (e) { return ""; } })(), true); }
+  else { $("login").hidden = false; }
+})();
+</script>
 </body>
 </html>
