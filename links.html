@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title>Links · Fiore Store</title>
+<style>
+  :root {
+    --brand:#FCAD2C; --brand-tint:#FDF1DD;
+    --primary:#A0640A; --primary-dark:#7A4B02;
+    --bg:#FBF8F3; --card:#ffffff; --text:#1d1d1f; --muted:#6e6e73;
+    --border:#e7ddcb; --error:#c0392b; --error-tint:#fdecea;
+    --success:#1e7e34;
+    --shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif; background:var(--bg); color:var(--text); }
+  .header { background:var(--brand); padding:26px 16px 20px; text-align:center; }
+  .header h1 { margin:0; color:#fff; font-size:22px; text-shadow:0 1px 2px rgba(0,0,0,0.12); }
+  .wrap { max-width:760px; margin:0 auto; padding:18px 16px 90px; }
+  .backlink { display:block; text-align:center; color:var(--muted); font-size:12.5px; margin-bottom:16px; text-decoration:none; }
+  .backlink:hover { color:var(--primary); text-decoration:underline; }
+  .subtitle { color:var(--muted); font-size:14px; text-align:center; margin-bottom:16px; }
+  [hidden] { display:none !important; }
+
+  .btn { display:inline-block; padding:10px 16px; border-radius:10px; border:1px solid var(--border); background:var(--card); color:var(--text); font-size:14px; font-weight:600; font-family:inherit; cursor:pointer; text-decoration:none; text-align:center; }
+  .btn:disabled { opacity:.55; cursor:default; }
+  .btn-principal { background:var(--primary); border-color:var(--primary); color:#fff; }
+  .btn-secundario { color:var(--primary); border-color:var(--primary); }
+  .btn-ghost { color:var(--muted); }
+  .btn-danger { color:var(--error); border-color:#f0c5bf; }
+  .btn-whats { color:#1a7f3c; border-color:#b7dfc4; }
+  .btn-sm { padding:7px 11px; font-size:12.5px; border-radius:8px; }
+
+  .barra { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-bottom:12px; }
+  .barra .grow { flex:1 1 180px; }
+  .barra input[type=search] { width:100%; padding:10px 12px; border:1px solid var(--border); border-radius:10px; font-size:14px; background:var(--card); font-family:inherit; }
+  .chips { display:flex; gap:6px; overflow-x:auto; margin-bottom:14px; -webkit-overflow-scrolling:touch; }
+  .chip { flex:none; padding:8px 13px; border-radius:999px; border:1px solid var(--border); background:var(--card); font-size:13px; font-weight:600; color:var(--muted); cursor:pointer; font-family:inherit; }
+  .chip.active { background:var(--brand-tint); border-color:var(--brand); color:var(--primary-dark); }
+
+  .card { background:var(--card); border:1px solid var(--border); border-radius:14px; box-shadow:var(--shadow); }
+  .item { padding:14px 16px; margin-bottom:10px; }
+  .item .nome { font-weight:700; font-size:16px; }
+  .item .cat { display:inline-block; margin-left:8px; padding:2px 9px; border-radius:7px; font-size:11.5px; font-weight:700; background:var(--brand-tint); color:var(--primary-dark); vertical-align:middle; }
+  .item .nota { color:var(--muted); font-size:13.5px; margin-top:5px; line-height:1.4; white-space:pre-wrap; }
+  .item .url { color:var(--muted); font-size:12.5px; margin-top:5px; word-break:break-all; }
+  .acoes { display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
+  .vazio { text-align:center; color:var(--muted); padding:34px 16px; font-size:14px; line-height:1.6; }
+  .sugestoes { display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin-top:14px; }
+
+  .overlay { position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:100; display:flex; align-items:flex-end; justify-content:center; }
+  .sheet { background:var(--card); width:100%; max-width:520px; max-height:92vh; overflow-y:auto; border-radius:18px 18px 0 0; padding:20px 18px 24px; }
+  @media (min-width:640px) { .overlay { align-items:center; } .sheet { border-radius:16px; } }
+  .sheet h2 { margin:0 0 14px; font-size:17px; }
+  .sheet label { display:block; font-size:13px; font-weight:600; margin:12px 0 5px; }
+  .sheet label small { font-weight:400; color:var(--muted); }
+  .sheet input, .sheet textarea { width:100%; padding:11px 12px; border:1px solid var(--border); border-radius:10px; font-size:16px; background:var(--bg); color:var(--text); font-family:inherit; }
+  .sheet textarea { min-height:70px; resize:vertical; }
+  .sheet .acoes-form { display:flex; gap:10px; margin-top:20px; } .sheet .acoes-form .btn { flex:1; padding:13px; }
+  .sheet .erro { color:var(--error); font-size:13px; margin-top:10px; min-height:1em; }
+  .toast { position:fixed; left:50%; bottom:24px; transform:translateX(-50%); background:#222; color:#fff; padding:11px 18px; border-radius:10px; font-size:14px; z-index:200; max-width:90vw; }
+  .carregando { text-align:center; color:var(--muted); padding:40px 16px; }
+</style>
+</head>
+<body>
+
+<div class="header"><h1>Links</h1></div>
+
+<div class="wrap">
+  <a class="backlink" id="backlink" href="https://fiorestore.github.io/">« voltar ao painel</a>
+  <div class="subtitle">Links guardados para abrir ou mandar para o cliente.</div>
+
+  <div class="barra">
+    <button class="btn btn-principal" id="btnNovo">+ Novo link</button>
+    <div class="grow"><input type="search" id="busca" placeholder="Buscar link…"></div>
+    <button class="btn btn-ghost" id="btnAtualizar">↻</button>
+  </div>
+  <div class="chips" id="chips"></div>
+  <div id="lista"><div class="carregando">Carregando…</div></div>
+</div>
+
+<div class="overlay" id="overlay" hidden><div class="sheet" id="sheet"></div></div>
+
+<script>
+(function () {
+  "use strict";
+
+  var WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbw22fQo18s_OSnF8zBUGagKBoAk-5b0bymc2XCPcusiaE-IRb2nFfyZsB31ywvqeV5RBA/exec';
+  var SENHA = 'TROQUE_PARA_UMA_SENHA_SUA';
+  var CATEGORIAS = ["Office", "Windows", "macOS", "Drivers", "Programas", "Outros"];
+
+  if (new URLSearchParams(location.search).get('painel') === 'funcionario') {
+    $("backlink").href = 'https://fiorestore.github.io/painel-funcionario.html';
+  }
+
+  var state = { links: [], busca: "", categoria: "", carregado: false };
+
+  function $(id) { return document.getElementById(id); }
+  function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
+  function toast(msg) {
+    var el = $("toastEl"); if (el) el.remove();
+    el = document.createElement("div"); el.id = "toastEl"; el.className = "toast"; el.textContent = msg;
+    document.body.appendChild(el);
+    setTimeout(function () { if (el.parentNode) el.remove(); }, 3000);
+  }
+
+  function api(payload) {
+    payload.senha = SENHA;
+    return fetch(WEBAPP_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(payload) })
+      .then(function (r) { return r.json(); });
+  }
+
+  function carregar() {
+    return api({ action: "links_listar" }).then(function (res) {
+      if (!res.ok) throw new Error(res.erro || "erro");
+      state.links = res.links || [];
+      state.carregado = true;
+      render();
+    }).catch(function () {
+      $("lista").innerHTML = '<div class="card vazio">Não foi possível carregar os links agora.<br><br><button class="btn btn-secundario" id="btnTentar">Tentar de novo</button></div>';
+      var b = $("btnTentar"); if (b) b.addEventListener("click", carregar);
+    });
+  }
+
+  function hostDe(url) { try { return new URL(url).hostname.replace(/^www\./, ""); } catch (e) { return url; } }
+
+  function render() {
+    var cats = [];
+    state.links.forEach(function (l) { if (l.categoria && cats.indexOf(l.categoria) < 0) cats.push(l.categoria); });
+    cats.sort();
+    if (state.categoria && cats.indexOf(state.categoria) < 0) state.categoria = "";
+    $("chips").hidden = cats.length < 1;
+    $("chips").innerHTML = ['<button class="chip' + (!state.categoria ? " active" : "") + '" data-cat="">Todos (' + state.links.length + ")</button>"].concat(cats.map(function (c) {
+      var n = state.links.filter(function (l) { return l.categoria === c; }).length;
+      return '<button class="chip' + (state.categoria === c ? " active" : "") + '" data-cat="' + esc(c) + '">' + esc(c) + " (" + n + ")</button>";
+    })).join("");
+
+    var q = state.busca.toLowerCase();
+    var lista = state.links.filter(function (l) {
+      return (!state.categoria || l.categoria === state.categoria) &&
+        (!q || (l.nome + " " + l.categoria + " " + l.nota + " " + l.url).toLowerCase().indexOf(q) >= 0);
+    }).sort(function (a, b) { return a.nome.toLowerCase() < b.nome.toLowerCase() ? -1 : 1; });
+
+    if (!state.links.length) {
+      $("lista").innerHTML = '<div class="card vazio">Nenhum link guardado ainda.<br>Guarde aqui os links que você manda para os clientes.' +
+        '<div class="sugestoes"><button class="btn btn-secundario btn-sm" data-sug="Office Windows" data-cat="Office">+ Office Windows</button>' +
+        '<button class="btn btn-secundario btn-sm" data-sug="Office Mac" data-cat="Office">+ Office Mac</button></div></div>';
+      return;
+    }
+    if (!lista.length) { $("lista").innerHTML = '<div class="card vazio">Nenhum link encontrado.</div>'; return; }
+    $("lista").innerHTML = lista.map(function (l) {
+      var msg = "Segue o link do " + l.nome + ": " + l.url;
+      return '<div class="card item"><div><span class="nome">' + esc(l.nome) + "</span>" + (l.categoria ? '<span class="cat">' + esc(l.categoria) + "</span>" : "") + "</div>" +
+        (l.nota ? '<div class="nota">' + esc(l.nota) + "</div>" : "") +
+        '<div class="url">' + esc(hostDe(l.url)) + '</div>' +
+        '<div class="acoes"><a class="btn btn-principal btn-sm" href="' + esc(l.url) + '" target="_blank" rel="noopener">Abrir</a>' +
+        '<button class="btn btn-secundario btn-sm" data-act="copiar" data-id="' + l.id + '">📋 Copiar link</button>' +
+        '<a class="btn btn-whats btn-sm" href="https://wa.me/?text=' + encodeURIComponent(msg) + '" target="_blank" rel="noopener">📲 Enviar</a>' +
+        '<button class="btn btn-ghost btn-sm" data-act="editar" data-id="' + l.id + '">Editar</button>' +
+        '<button class="btn btn-danger btn-sm" data-act="excluir" data-id="' + l.id + '">Excluir</button></div></div>';
+    }).join("");
+  }
+
+  function abrir(html) { $("sheet").innerHTML = html; $("overlay").hidden = false; }
+  function fechar() { $("overlay").hidden = true; $("sheet").innerHTML = ""; }
+
+  function formLink(item, sugNome, sugCat) {
+    var cats = CATEGORIAS.slice();
+    state.links.forEach(function (l) { if (l.categoria && cats.indexOf(l.categoria) < 0) cats.push(l.categoria); });
+    abrir("<h2>" + (item ? "Editar link" : "Novo link") + "</h2>" +
+      '<label>Nome *</label><input id="f-nome" value="' + esc(item ? item.nome : (sugNome || "")) + '" placeholder="Ex: Office 2021 para Windows">' +
+      '<label>Link *</label><input id="f-url" inputmode="url" autocapitalize="off" autocorrect="off" value="' + esc(item ? item.url : "") + '" placeholder="https://…">' +
+      '<label>Categoria <small>(opcional)</small></label><input id="f-cat" list="cats" value="' + esc(item ? item.categoria : (sugCat || "")) + '"><datalist id="cats">' + cats.map(function (c) { return '<option value="' + esc(c) + '">'; }).join("") + "</datalist>" +
+      '<label>Observação <small>(opcional — não coloque senhas)</small></label><textarea id="f-nota" placeholder="Ex: baixar, instalar e ativar com a licença do cliente">' + esc(item ? item.nota : "") + "</textarea>" +
+      '<div class="erro" id="formErro"></div><div class="acoes-form"><button class="btn btn-ghost" id="fCancelar">Cancelar</button><button class="btn btn-principal" id="fSalvar">Salvar</button></div>');
+    $("fCancelar").onclick = fechar;
+    $("fSalvar").onclick = function () {
+      var nome = $("f-nome").value.trim(), url = $("f-url").value.trim();
+      if (!nome) { $("formErro").textContent = "Informe o nome."; return; }
+      if (url && !/^https?:\/\//i.test(url) && /^[\w-]+(\.[\w-]+)+/.test(url)) url = "https://" + url;
+      if (!/^https?:\/\/\S+$/i.test(url)) { $("formErro").textContent = "Informe um link válido (começando com https://)."; return; }
+      var d = { nome: nome, url: url, categoria: $("f-cat").value.trim(), nota: $("f-nota").value.trim() };
+      if (item) d.id = item.id;
+      var b = $("fSalvar"); b.disabled = true; b.textContent = "Salvando…";
+      api({ action: "link_salvar", dados: d }).then(function (res) {
+        if (!res.ok) { $("formErro").textContent = "Erro: " + (res.erro || "não foi possível salvar."); b.disabled = false; b.textContent = "Salvar"; return; }
+        fechar(); toast("Link salvo."); return carregar();
+      }).catch(function () { $("formErro").textContent = "Erro de conexão. Tente de novo."; b.disabled = false; b.textContent = "Salvar"; });
+    };
+  }
+
+  $("btnNovo").addEventListener("click", function () { formLink(null); });
+  $("btnAtualizar").addEventListener("click", function () { carregar().then(function () { toast("Atualizado."); }); });
+  $("busca").addEventListener("input", function (e) { state.busca = e.target.value; render(); });
+  $("overlay").addEventListener("click", function (e) { if (e.target === this) fechar(); });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape") fechar(); });
+  $("chips").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-cat]"); if (!b) return;
+    state.categoria = b.getAttribute("data-cat"); render();
+  });
+  $("lista").addEventListener("click", function (e) {
+    var s = e.target.closest("[data-sug]");
+    if (s) { formLink(null, s.getAttribute("data-sug"), s.getAttribute("data-cat")); return; }
+    var b = e.target.closest("[data-act]"); if (!b) return;
+    var id = b.getAttribute("data-id"), act = b.getAttribute("data-act");
+    var l = state.links.filter(function (x) { return x.id === id; })[0]; if (!l) return;
+    if (act === "copiar") {
+      navigator.clipboard.writeText(l.url).then(function () { toast("Link copiado."); })
+        .catch(function () { window.prompt("Copie o link:", l.url); });
+    } else if (act === "editar") formLink(l);
+    else if (act === "excluir") {
+      if (!window.confirm("Excluir o link \"" + l.nome + "\"?")) return;
+      api({ action: "link_excluir", id: id }).then(function (res) {
+        if (!res.ok) { toast("Erro: " + (res.erro || "não foi possível excluir.")); return; }
+        toast("Link excluído."); return carregar();
+      }).catch(function () { toast("Erro de conexão."); });
+    }
+  });
+
+  carregar();
+})();
+</script>
+</body>
+</html>
