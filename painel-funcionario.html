@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script src="/auth.js"></script>
 <title>Fiore Store</title>
 <style>
   :root {
@@ -221,13 +222,13 @@
     <a class="voltar" href="#" id="btnVoltarContrato">« voltar pro gerador de contrato</a>
   </div>
 
-  <div class="rodape" id="rodapeInterno">Uso interno Fiore Store · acesso de funcionário</div>
+  <div class="rodape" id="rodapeInterno">Uso interno Fiore Store · acesso de funcionário · <a href="#" id="linkSair" style="color:inherit">Sair</a></div>
 </div>
 
 <script>
   // URL do App da Web (Google Apps Script) — usado só como API de geração de PDF, nunca carregado como página.
   const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbw22fQo18s_OSnF8zBUGagKBoAk-5b0bymc2XCPcusiaE-IRb2nFfyZsB31ywvqeV5RBA/exec';
-  const SENHA = 'TROQUE_PARA_UMA_SENHA_SUA';
+  const SENHA = '';
 
   const TAXAS = {
     DEBITO: 1.60, PIX: 0.65,
@@ -345,11 +346,23 @@
     return true;
   }
 
-  document.getElementById('btnGerarLink').addEventListener('click', function () {
+  document.getElementById('btnGerarLink').addEventListener('click', async function () {
     const d = dadosEtapa1();
     if (!validarEtapa1(d)) return;
+    // O servidor assina o link: só ele funciona para o cliente e os dados da venda ficam travados
+    let lt = '';
+    try {
+      const resp = await fetch(WEBAPP_URL + '?' + new URLSearchParams({ action: 'link_cliente_assinar', sp: JSON.stringify(d) }).toString());
+      const j = await resp.json();
+      if (!j.ok) throw new Error(j.erro || 'falha');
+      lt = j.lt;
+    } catch (errLink) {
+      alert('Não foi possível gerar o link seguro agora. Confira a internet e tente de novo.');
+      return;
+    }
     const dLink = Object.assign({}, d);
     if (!dLink.entrega) delete dLink.entrega;
+    dLink.lt = lt;
     const qs = new URLSearchParams(dLink).toString();
     const link = 'https://fiorestore.github.io/?' + qs;
     document.getElementById('linkGerado').innerHTML =
@@ -545,6 +558,12 @@
       '<b>Você recebe líquido:</b> <span class="destaque">' + fmt(valorLiquido) + '</span>' +
       '</div>';
   });
+
+  // ---- sair / encerrar acessos ----
+  (function () {
+    const a = document.getElementById('linkSair');
+    if (a) a.addEventListener('click', function (e) { e.preventDefault(); if (window.FIORE_AUTH) FIORE_AUTH.sair(); });
+  })();
 </script>
 </body>
 </html>

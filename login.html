@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title>Entrar · Fiore Store</title>
+<style>
+  :root {
+    --brand:#FCAD2C; --brand-tint:#FDF1DD; --primary:#A0640A;
+    --bg:#FBF8F3; --card:#ffffff; --text:#1d1d1f; --muted:#6e6e73; --border:#e7ddcb; --error:#c0392b;
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif; background:var(--bg); color:var(--text); }
+  .header { background:var(--brand); padding:26px 16px 20px; text-align:center; }
+  .header h1 { margin:0; color:#fff; font-size:22px; text-shadow:0 1px 2px rgba(0,0,0,0.12); }
+  .card { max-width:380px; margin:34px auto; background:var(--card); border:1px solid var(--border); border-radius:14px; box-shadow:0 1px 3px rgba(0,0,0,0.08); padding:28px 22px; text-align:center; }
+  .card h2 { margin:0 0 6px; font-size:18px; }
+  .card p { margin:0 0 18px; color:var(--muted); font-size:13.5px; }
+  input[type=password] { width:100%; padding:13px; border:1px solid var(--border); border-radius:10px; font-size:16px; margin-bottom:12px; background:var(--bg); font-family:inherit; }
+  label.lembrar { display:flex; gap:8px; align-items:center; justify-content:center; font-size:13px; color:var(--muted); margin-bottom:16px; }
+  button { width:100%; padding:13px; border:0; border-radius:10px; background:var(--primary); color:#fff; font-size:15.5px; font-weight:700; font-family:inherit; cursor:pointer; }
+  button:disabled { opacity:.6; }
+  .erro { color:var(--error); font-size:13.5px; min-height:1.2em; margin-bottom:10px; }
+</style>
+</head>
+<body>
+<div class="header"><h1>Fiore Store</h1></div>
+<div class="card">
+  <h2>🔒 Área restrita</h2>
+  <p>Digite a senha para entrar no sistema.</p>
+  <input type="password" id="senha" placeholder="Senha" autocomplete="current-password" autofocus>
+  <label class="lembrar"><input type="checkbox" id="lembrar"> Manter conectado neste aparelho (30 dias)</label>
+  <div class="erro" id="erro"></div>
+  <button id="entrar">Entrar</button>
+</div>
+<script>
+(function () {
+  "use strict";
+  var WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbw22fQo18s_OSnF8zBUGagKBoAk-5b0bymc2XCPcusiaE-IRb2nFfyZsB31ywvqeV5RBA/exec';
+  var CHAVE = "fiore_token";
+  var $ = function (id) { return document.getElementById(id); };
+
+  function destino(papel) {
+    var next = new URLSearchParams(location.search).get("next") || "";
+    // só caminhos do próprio site; funcionário nunca é mandado para páginas do dono
+    if (next.charAt(0) === "/" && next.charAt(1) !== "/" && !/^\/login\.html/.test(next)) return next;
+    return papel === "dono" ? "/" : "/painel-funcionario.html";
+  }
+
+  function entrar() {
+    var senha = $("senha").value;
+    if (!senha) { $("erro").textContent = "Digite a senha."; return; }
+    $("entrar").disabled = true; $("erro").textContent = "";
+    fetch(WEBAPP_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify({ action: "login", senha: senha, dias: $("lembrar").checked ? 30 : 0 }) })
+      .then(function (r) { return r.json(); })
+      .then(function (res) {
+        if (!res.ok) {
+          $("erro").textContent = /tentativas/.test(res.erro || "") ? "Muitas tentativas. Aguarde 10 minutos." : "Senha incorreta.";
+          $("entrar").disabled = false; $("senha").select();
+          return;
+        }
+        try { localStorage.setItem(CHAVE, res.token); } catch (e) { $("erro").textContent = "Não foi possível salvar o acesso neste navegador."; $("entrar").disabled = false; return; }
+        location.replace(destino(res.papel));
+      })
+      .catch(function () { $("erro").textContent = "Erro de conexão. Tente de novo."; $("entrar").disabled = false; });
+  }
+
+  $("entrar").addEventListener("click", entrar);
+  $("senha").addEventListener("keydown", function (e) { if (e.key === "Enter") entrar(); });
+})();
+</script>
+</body>
+</html>
