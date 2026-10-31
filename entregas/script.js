@@ -25,7 +25,7 @@
   }
 
   var WEBAPP_URL = "https://script.google.com/macros/s/AKfycbw22fQo18s_OSnF8zBUGagKBoAk-5b0bymc2XCPcusiaE-IRb2nFfyZsB31ywvqeV5RBA/exec";
-  var SENHA = "TROQUE_PARA_UMA_SENHA_SUA";
+  var SENHA = "";
 
   function api(params) {
     var qs = new URLSearchParams(Object.assign({ senha: SENHA }, params));
