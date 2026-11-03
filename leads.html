@@ -241,7 +241,7 @@
     <div class="dlg-b">
       <label class="campo"><span>Nome *</span><input id="lNome" required autocomplete="off" placeholder="Nome do cliente"></label>
       <div class="g2">
-        <label class="campo"><span>Telefone / WhatsApp</span><input id="lTel" inputmode="tel" autocomplete="off" placeholder="(19) 99999-9999"></label>
+        <label class="campo"><span>Telefone / WhatsApp</span><input id="lTel" inputmode="tel" autocomplete="off" placeholder="DDD + número, ou cole com +55"></label>
         <label class="campo"><span>Canal de origem</span><select id="lCanal"></select></label>
       </div>
       <label class="campo"><span>Produto ou interesse</span><input id="lInteresse" autocomplete="off" placeholder="Ex: MacBook Air M1, iPad 9ª geração…"></label>
@@ -392,24 +392,34 @@
   function aberto(l) { return l.status !== "fechado" && l.status !== "perdido"; }
 
   function digitos(s) { return String(s || "").replace(/\D/g, ""); }
-  function fmtTel(d) {
-    d = digitos(d);
-    if (!d) return "";
-    var pre = "";
-    if (d.length > 11 && d.indexOf("55") === 0 && d.length <= 13) { d = d.slice(2); pre = "+55 "; }
-    if (d.length === 11) return pre + "(" + d.slice(0, 2) + ") " + d.slice(2, 7) + "-" + d.slice(7);
-    if (d.length === 10) return pre + "(" + d.slice(0, 2) + ") " + d.slice(2, 6) + "-" + d.slice(6);
-    return pre + d;
-  }
-  function maskTel(v) {
-    var d = digitos(v);
-    if (d.length > 11) return d;
-    if (d.length > 6) return "(" + d.slice(0, 2) + ") " + d.slice(2, d.length > 10 ? 7 : 6) + "-" + d.slice(d.length > 10 ? 7 : 6);
-    if (d.length > 2) return "(" + d.slice(0, 2) + ") " + d.slice(2);
+  // Telefone do Brasil é guardado sempre SEM o país (DDD + número). Se vier com 55 (ex.: +55 19 99249-3015 colado do WhatsApp), o 55 é retirado.
+  function normTel(v) {
+    var d = digitos(v).replace(/^0+/, "");
+    if ((d.length === 12 || d.length === 13) && d.indexOf("55") === 0) d = d.slice(2);
     return d;
   }
+  function maskNac(d) {
+    if (d.length <= 2) return d;
+    if (d.length <= 6) return "(" + d.slice(0, 2) + ") " + d.slice(2);
+    if (d.length <= 10) return "(" + d.slice(0, 2) + ") " + d.slice(2, 6) + "-" + d.slice(6);
+    return "(" + d.slice(0, 2) + ") " + d.slice(2, 7) + "-" + d.slice(7);
+  }
+  function fmtTel(v) {
+    var d = normTel(v);
+    if (d.length === 10 || d.length === 11) return maskNac(d);
+    return d.length > 11 ? "+" + d : d;
+  }
+  // máscara do campo enquanto digita ou cola: aceita "19 99249-3015", "+55 19 99249-3015" e "5519992493015"
+  function maskTel(v) {
+    v = String(v || "");
+    var d = digitos(v), intl = v.trim().charAt(0) === "+";
+    if (!intl && d.length >= 12 && d.indexOf("55") === 0) intl = true;
+    if (!intl) { d = d.replace(/^0+/, ""); return d.length > 11 ? d : maskNac(d); }
+    if (d.indexOf("55") !== 0) return "+" + d;
+    return d.length <= 2 ? "+" + d : "+55 " + maskNac(d.slice(2, 13));
+  }
   function waNum(tel) {
-    var d = digitos(tel).replace(/^0+/, "");
+    var d = normTel(tel);
     if (d.length < 10) return "";
     return d.length <= 11 ? "55" + d : d;
   }
@@ -447,7 +457,7 @@
   // ---------- filtros ----------
   function passa(l, ignorarStatus) {
     if (F.q) {
-      var q = norm(F.q), dq = digitos(F.q);
+      var q = norm(F.q), dq = normTel(F.q);
       var okNome = norm(l.nome).indexOf(q) >= 0 || norm(l.interesse).indexOf(q) >= 0;
       var okTel = dq && digitos(l.telefone).indexOf(dq) >= 0;
       if (!okNome && !okTel) return false;
@@ -695,7 +705,7 @@
   function lerForm() {
     return {
       nome: $("lNome").value.trim(),
-      telefone: digitos($("lTel").value),
+      telefone: normTel($("lTel").value),
       canal: $("lCanal").value,
       interesse: $("lInteresse").value.trim(),
       obs: $("lObs").value.trim(),
@@ -960,7 +970,7 @@
     rows.slice(1).forEach(function (r) {
       var o = {};
       map.forEach(function (k, i) { if (k) o[k] = (r[i] || "").trim(); });
-      var tel = digitos(o.telefone);
+      var tel = normTel(o.telefone);
       if (!o.nome && !tel) { sem++; return; }
       if (tel && existentes[waNum(tel)]) { dup++; return; }
       if (tel) existentes[waNum(tel)] = 1;
