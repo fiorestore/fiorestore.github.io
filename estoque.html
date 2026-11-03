@@ -161,7 +161,7 @@
 </div>
 
 <div class="wrap">
-  <div class="subtitle">Controle de notebooks, MacBooks, PCs e peças — entrada, custo e venda</div>
+  <div class="subtitle">Controle de notebooks, MacBooks, iPads, PCs e peças — entrada, custo e venda</div>
   <a class="backlink" href="https://fiorestore.github.io/">« fiorestore.github.io — gerador de contrato</a>
 
   <div id="banner"></div>
@@ -207,6 +207,7 @@
           <option>Gabinete</option>
           <option>Refrigeração</option>
           <option>Outras peças</option>
+          <option>iPad</option>
           <option>Outro</option>
         </select>
       </div>
@@ -445,22 +446,24 @@
     if (/^(refrigeracao|cooler|water)/.test(tp)) return "refrigeracao";
     if (/^(pc|computador|desktop)/.test(tp)) return "pc-completo";
     if (/^(outras? pecas?|peca)/.test(tp)) return "outras";
+    if (/^ipad/.test(tp) || /\bipad\b/.test(semAcento(d.modelo))) return "ipad";
     var t = tp + " " + semAcento(d.modelo);
     if (/macbook/.test(t)) return "macbook";
     if (/gamer|gaming|legion|nitro|predator|\brog\b|\btuf\b|alienware|victus|\bloq\b/.test(t)) return "gamer";
     return "notebook";
   }
 
-  function secaoDe(d) { return ["notebook", "gamer", "macbook"].indexOf(categoriaTipo(d)) >= 0 ? "notebooks" : "pcs"; }
+  function secaoDe(d) { var c = categoriaTipo(d); return c === "ipad" ? "ipads" : (["notebook", "gamer", "macbook"].indexOf(c) >= 0 ? "notebooks" : "pcs"); }
 
   function renderSecoes() {
-    var nb = 0, pc = 0, sub = {};
+    var nb = 0, pc = 0, ip = 0, sub = {};
     state.devices.forEach(function (d) {
       if (normalizeStatus(d.status) === "vendido") return;
       if (secaoDe(d) === "notebooks") nb++;
+      else if (secaoDe(d) === "ipads") ip++;
       else { pc++; var c = categoriaTipo(d); sub[c] = (sub[c] || 0) + 1; }
     });
-    document.getElementById("secaoTabs").innerHTML = [["notebooks", "💻 Notebooks e MacBooks", nb], ["pcs", "🖥️ PCs e peças", pc]].map(function (t) {
+    document.getElementById("secaoTabs").innerHTML = [["notebooks", "💻 Notebooks e MacBooks", nb], ["pcs", "🖥️ PCs e peças", pc], ["ipads", "📱 iPads", ip]].map(function (t) {
       return '<button class="tab secao-tab' + (state.secao === t[0] ? " active" : "") + '" data-secao="' + t[0] + '">' + t[1] + ' <span class="n">' + t[2] + "</span></button>";
     }).join("");
     var st = document.getElementById("subTabs");
@@ -469,7 +472,7 @@
       var n = t[0] ? (sub[t[0]] || 0) : pc;
       return '<button class="tab' + (state.tipo === t[0] ? " active" : "") + '" data-sub="' + t[0] + '">' + t[1] + ' <span class="n">' + n + "</span></button>";
     }).join("");
-    document.getElementById("filtroTipo").hidden = state.secao === "pcs";
+    document.getElementById("filtroTipo").hidden = state.secao !== "notebooks";
   }
 
   function devicesDaSecao() { return state.devices.filter(function (d) { return secaoDe(d) === state.secao; }); }
@@ -787,7 +790,8 @@
     "fonte": [["Potência", "Ex: 650W"], ["Certificação", "Ex: 80 Plus Bronze"], ["Cabos", "Ex: Modular / não modular"], null],
     "gabinete": [["Formato", "Ex: ATX / Mid Tower"], ["Cor e lateral", "Ex: Preto, vidro temperado"], ["Ventoinhas", "Ex: 3 inclusas"], null],
     "refrigeracao": [["Tipo", "Ex: Air cooler / Water cooler 240mm"], ["Soquetes compatíveis", "Ex: AM4, LGA1200"], ["Tamanho / ventoinhas", "Ex: 120mm RGB"], null],
-    "outras": [["Tipo de peça", "Ex: SSD NVMe / Memória RAM"], ["Capacidade / velocidade", "Ex: 512GB / 3200MHz"], ["Interface", "Ex: M.2 / DDR4"], null]
+    "outras": [["Tipo de peça", "Ex: SSD NVMe / Memória RAM"], ["Capacidade / velocidade", "Ex: 512GB / 3200MHz"], ["Interface", "Ex: M.2 / DDR4"], null],
+    "ipad": [["Chip", "Ex: Apple M2 / A14 Bionic"], null, ["Armazenamento", "Ex: 128GB"], ["Tela e conectividade", "Ex: 11 pol., Wi-Fi + Cellular"]]
   };
   var CAMPOS_IDS = ["f-processador", "f-ram", "f-armazenamento", "f-gpu"];
 
@@ -816,7 +820,8 @@
   // Opções de tipo mostradas no cadastro: só as da seção em que o produto está
   var TIPOS_SECAO = {
     notebooks: ["Notebook", "Notebook Gamer", "MacBook", "Outro"],
-    pcs: ["PC Gamer", "PC Completo", "Placa-mãe", "Fonte", "Gabinete", "Refrigeração", "Outras peças"]
+    pcs: ["PC Gamer", "PC Completo", "Placa-mãe", "Fonte", "Gabinete", "Refrigeração", "Outras peças"],
+    ipads: ["iPad"]
   };
 
   function renderTipoChips(secao) {
@@ -840,6 +845,7 @@
   }
 
   function tipoInicialNovo() {
+    if (state.secao === "ipads") return "iPad";
     if (state.secao !== "pcs") return "Notebook";
     var m = { "placa-mae": "Placa-mãe", "fonte": "Fonte", "gabinete": "Gabinete", "refrigeracao": "Refrigeração", "outras": "Outras peças" };
     return m[state.tipo] || "PC Gamer";
@@ -1124,6 +1130,7 @@
       "gabinete": "Gabinetes disponíveis 🖥️", "refrigeracao": "Refrigeração disponível 🖥️", "outras": "Peças disponíveis 🖥️"
     };
     if (state.tipo && t[state.tipo]) return t[state.tipo];
+    if (state.secao === "ipads") return "iPads disponíveis 📱";
     return state.secao === "pcs" ? "PCs e peças disponíveis 🖥️" : "Notebooks e MacBooks disponíveis 💻";
   }
 

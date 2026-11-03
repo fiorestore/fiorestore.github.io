@@ -79,7 +79,7 @@
       <a class="btn-whats" id="btnWhats" href="#" target="_blank" rel="noopener">💬 Tenho interesse — falar no WhatsApp</a>
     </div>
   </div>
-  <div class="rodape">Fiore Store · notebooks e MacBooks</div>
+  <div class="rodape">Fiore Store · notebooks, MacBooks e iPads</div>
 </main>
 
 <div id="lightbox" hidden><img referrerpolicy="no-referrer" alt="Foto do aparelho"></div>
@@ -113,6 +113,7 @@
     if (/^gabinete/.test(t)) return 'gabinete';
     if (/^(refrigeracao|cooler|water)/.test(t)) return 'refrigeracao';
     if (/^(outras? pecas?|peca)/.test(t)) return 'outras';
+    if (/^ipad/.test(t)) return 'ipad';
     return '';
   }
 
@@ -175,8 +176,9 @@
 
     $('chips').innerHTML = [p.tipo, p.condicao].filter(Boolean).map(function (c) { return '<span class="chip">' + esc(c) + '</span>'; }).join('');
 
-    var peca = CAMPOS_PECAS[categoriaPeca(p.tipo)];
-    var linhas = (peca ? [[peca[0], p.processador], [peca[1], p.ram], [peca[2], p.armazenamento]] : [
+    var cat = categoriaPeca(p.tipo);
+    var peca = CAMPOS_PECAS[cat];
+    var linhas = (cat === 'ipad' ? [['Chip', p.processador], ['Armazenamento', p.armazenamento], ['Tela e conectividade', p.gpu]] : peca ? [[peca[0], p.processador], [peca[1], p.ram], [peca[2], p.armazenamento]] : [
       ['Processador', p.processador], ['Memória RAM', comGB(p.ram)], ['Armazenamento', p.armazenamento], ['Placa de vídeo', p.gpu]
     ]).filter(function (l) { return l[1]; });
     var po = parseObs(p.observacoes);
