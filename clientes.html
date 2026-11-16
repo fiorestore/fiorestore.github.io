@@ -153,16 +153,14 @@
     <div class="row2">
       <div>
         <label>Cidade</label>
-        <input id="f-cidade" list="listaCidades" autocomplete="off" placeholder="Ex: São João da Boa Vista - SP">
-        <datalist id="listaCidades"></datalist>
+        <select id="f-cidade-sel"></select>
+        <input id="f-cidade" placeholder="Digite a cidade e o estado" style="margin-top:8px" hidden>
       </div>
       <div>
         <label>CEP</label>
         <input id="f-cep" placeholder="Ex: 13860-000">
       </div>
     </div>
-
-    <div class="quick" id="quickCidades" aria-label="Cidades próximas"></div>
 
     <div class="row2">
       <div>
@@ -438,7 +436,7 @@
     document.getElementById("f-nome").value = cliente ? cliente.nome || "" : "";
     document.getElementById("f-cpf").value = cliente ? cliente.cpf || "" : "";
     document.getElementById("f-telefone").value = cliente ? cliente.telefone || "" : "";
-    document.getElementById("f-cidade").value = cliente ? cliente.cidade || "" : "";
+    setCidade(cliente ? cliente.cidade || "" : "");
     document.getElementById("f-cep").value = cliente ? cepTexto(cliente.cep) : "";
     document.getElementById("f-endereco").value = cliente ? cliente.endereco || "" : "";
     document.getElementById("f-complemento").value = cliente ? cliente.complemento || "" : "";
@@ -446,17 +444,25 @@
     document.getElementById("f-observacoes").value = ob.texto;
     state.formTipos = ob.tipos.slice();
     renderTipos();
-    renderQuickCidades();
     document.getElementById("formPanel").hidden = false;
     document.getElementById("formPanel").scrollIntoView({ behavior: "smooth", block: "start" });
     document.getElementById("f-nome").focus();
   }
 
-  function renderQuickCidades() {
-    var atual = document.getElementById("f-cidade").value.trim().toLowerCase();
-    document.getElementById("quickCidades").innerHTML = CIDADES.map(function (c) {
-      return '<button type="button" class="qchip' + (c.toLowerCase() === atual ? " on" : "") + '" data-cidade="' + escapeHtml(c) + '">' + escapeHtml(c.replace(" - SP", "")) + "</button>";
-    }).join("");
+  // Compara cidades sem acento, maiúsculas nem a sigla do estado no fim
+  function chaveCidade(v) {
+    return String(v || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase()
+      .replace(/\s*[-\/,]\s*[a-z]{2}\s*$/, "").replace(/\s+/g, " ").trim();
+  }
+
+  // Cidade da lista fica na caixa de seleção; qualquer outra abre o campo de digitar
+  function setCidade(valor) {
+    var sel = document.getElementById("f-cidade-sel"), inp = document.getElementById("f-cidade");
+    var v = String(valor || "").trim(), k = chaveCidade(v);
+    var achada = v ? CIDADES.filter(function (c) { return chaveCidade(c) === k; })[0] : "";
+    if (achada) { sel.value = achada; inp.value = achada; inp.hidden = true; }
+    else if (v) { sel.value = "__outra"; inp.value = v; inp.hidden = false; }
+    else { sel.value = ""; inp.value = ""; inp.hidden = true; }
   }
 
   function renderTipos() {
@@ -607,19 +613,19 @@
     }
   });
 
-  document.getElementById("listaCidades").innerHTML = CIDADES.map(function (c) { return '<option value="' + escapeHtml(c) + '">'; }).join("");
+  document.getElementById("f-cidade-sel").innerHTML = '<option value="">Selecione a cidade…</option>' +
+    CIDADES.map(function (c) { return '<option value="' + escapeHtml(c) + '">' + escapeHtml(c) + "</option>"; }).join("") +
+    '<option value="__outra">Outra cidade (digitar)…</option>';
   document.getElementById("filtroTipo").innerHTML = '<option value="">Todos os tipos</option>' + TIPOS.map(function (t) { return '<option>' + escapeHtml(t) + "</option>"; }).join("");
   document.getElementById("filtroTipo").addEventListener("change", function (e) {
     state.filtroTipo = e.target.value;
     renderList();
   });
-  document.getElementById("quickCidades").addEventListener("click", function (e) {
-    var b = e.target.closest("button[data-cidade]");
-    if (!b) return;
-    document.getElementById("f-cidade").value = b.getAttribute("data-cidade");
-    renderQuickCidades();
+  document.getElementById("f-cidade-sel").addEventListener("change", function (e) {
+    var inp = document.getElementById("f-cidade");
+    if (e.target.value === "__outra") { inp.value = ""; inp.hidden = false; inp.focus(); }
+    else { inp.value = e.target.value; inp.hidden = true; }
   });
-  document.getElementById("f-cidade").addEventListener("input", renderQuickCidades);
   document.getElementById("quickTipos").addEventListener("click", function (e) {
     var b = e.target.closest("button[data-tipo]");
     if (!b) return;
