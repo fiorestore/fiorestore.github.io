@@ -69,7 +69,7 @@
         <span class="home-icon">📄</span><span>Novo contrato</span>
       </button>
       <button class="home-card" id="cardCalc" type="button">
-        <span class="home-icon">💳</span><span>Calculadora Stone</span>
+        <span class="home-icon">💳</span><span>Calculadora de taxas</span>
       </button>
       <a class="home-card" href="https://fiorestore.github.io/estoque.html">
         <span class="home-icon">💻</span><span>Estoque</span>
@@ -183,16 +183,22 @@
       <div id="resultado"></div>
     </div>
 
-    <a class="voltar" href="#" id="btnIrCalc" style="display:block; text-align:center;">🧮 Calculadora de juros da maquininha</a>
+    <a class="voltar" href="#" id="btnIrCalc" style="display:block; text-align:center;">🧮 Calculadora de taxas (Stone e InfinitePay)</a>
     <a class="voltar" href="https://fiorestore.github.io/estoque.html" id="linkEstoque" style="display:block; text-align:center;">📦 Estoque de notebooks</a>
   </div>
 
   <!-- ===== TELA: CALCULADORA DE JUROS ===== -->
   <div id="telaCalc" hidden>
     <a class="voltar" href="#" id="btnVoltarHomeCalc" style="margin-top:0; margin-bottom:8px;">&laquo; voltar ao painel</a>
-    <div class="subtitle">Calculadora de Juros da Maquininha (Stone)</div>
+    <div class="subtitle">Calculadora de Taxas — Maquininha Stone e Link InfinitePay</div>
 
     <div class="card">
+      <label>Forma de recebimento</label>
+      <select id="meioCalc">
+        <option value="stone">Maquininha Stone</option>
+        <option value="infinite">Link de pagamento InfinitePay</option>
+      </select>
+
       <label>Valor (R$)</label>
       <input type="text" id="valorCalc" placeholder="Ex: 1500">
 
@@ -251,6 +257,13 @@
     '7': 9.55, '8': 10.40, '9': 11.26, '10': 12.11, '11': 12.97, '12': 13.82,
     '13': 14.68, '14': 15.53, '15': 16.39, '16': 17.24, '17': 18.10,
     '18': 18.95, '19': 19.81, '20': 20.66, '21': 21.52
+  };
+
+  // Link de pagamento InfinitePay (Pix grátis, crédito até 12x)
+  const TAXAS_INFINITE = {
+    PIX: 0,
+    '1': 4.20, '2': 6.09, '3': 7.01, '4': 7.91, '5': 8.80, '6': 9.67,
+    '7': 12.59, '8': 13.42, '9': 14.25, '10': 15.06, '11': 15.87, '12': 16.66
   };
 
   // ---- Navegação entre telas (painel / gerador de contrato / calculadora) ----
@@ -563,10 +576,23 @@
   const selectParcelasCalc = document.getElementById('parcelasCalc');
   const selectModoCalc = document.getElementById('modoCalc');
 
-  selectParcelasCalc.addEventListener('change', function () {
-    const v = this.value;
+  const selectMeioCalc = document.getElementById('meioCalc');
+  const OPCOES_STONE = selectParcelasCalc.innerHTML;
+  const OPCOES_INFINITE = '<option value="PIX">Pix (grátis)</option><option value="1">Crédito à vista (1x)</option>' +
+    Object.keys(TAXAS_INFINITE).filter(function (k) { return Number(k) > 1; })
+      .map(function (k) { return '<option value="' + k + '">Crédito ' + k + 'x</option>'; }).join('');
+
+  function ajustarModoCalc() {
+    const v = selectParcelasCalc.value;
     const semJuros = (v === 'DEBITO' || v === 'PIX' || v === '1' || v === '2' || v === '3');
     selectModoCalc.value = semJuros ? 'receber' : 'cobrar';
+  }
+  selectParcelasCalc.addEventListener('change', ajustarModoCalc);
+
+  selectMeioCalc.addEventListener('change', function () {
+    selectParcelasCalc.innerHTML = this.value === 'infinite' ? OPCOES_INFINITE : OPCOES_STONE;
+    ajustarModoCalc();
+    document.getElementById('resultadoCalc').innerHTML = '';
   });
 
   function fmt(n) {
@@ -578,7 +604,8 @@
     const valor = parseFloat(valorTexto);
     const parcelaKey = selectParcelasCalc.value;
     const modo = selectModoCalc.value;
-    const taxa = TAXAS[parcelaKey];
+    const infinite = selectMeioCalc.value === 'infinite';
+    const taxa = (infinite ? TAXAS_INFINITE : TAXAS)[parcelaKey];
     const nParcelas = (parcelaKey === 'DEBITO' || parcelaKey === 'PIX') ? 1 : parseInt(parcelaKey, 10);
     const resultado = document.getElementById('resultadoCalc');
 
@@ -600,10 +627,10 @@
 
     resultado.innerHTML =
       '<div class="resumo">' +
-      '<b>Taxa da maquininha:</b> ' + taxa.toFixed(2).replace('.', ',') + '%<br>' +
+      '<b>' + (infinite ? 'Taxa do link InfinitePay' : 'Taxa da maquininha') + ':</b> ' + (taxa === 0 ? 'grátis' : taxa.toFixed(2).replace('.', ',') + '%') + '<br>' +
       '<b>Valor a cobrar do cliente:</b> <span class="destaque">' + fmt(valorCobrado) + '</span><br>' +
       (nParcelas > 1 ? '<b>Parcela (' + nParcelas + 'x):</b> ' + fmt(valorParcela) + '<br>' : '') +
-      '<b>Desconto da maquininha:</b> ' + fmt(descontoMaquininha) + '<br>' +
+      '<b>' + (infinite ? 'Desconto do link' : 'Desconto da maquininha') + ':</b> ' + fmt(descontoMaquininha) + '<br>' +
       '<b>Você recebe líquido:</b> <span class="destaque">' + fmt(valorLiquido) + '</span>' +
       '</div>';
   });
