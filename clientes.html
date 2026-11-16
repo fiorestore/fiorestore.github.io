@@ -94,6 +94,15 @@
 
   .toast { position:fixed; left:50%; bottom:20px; transform:translateX(-50%); background:var(--text); color:var(--bg); padding:10px 18px; border-radius:999px; font-size:13px; box-shadow:0 4px 14px rgba(0,0,0,.2); z-index:50; }
 
+  .btn-whats { background:#1faa59; color:#fff; border:1px solid #1faa59; text-decoration:none; display:inline-flex; align-items:center; gap:5px; }
+  .btn-whats:hover { background:#168a47; border-color:#168a47; }
+  .quick { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
+  .qchip { border:1px solid var(--border); background:var(--card); color:var(--text); font-size:12.5px; font-family:inherit; padding:6px 11px; border-radius:999px; cursor:pointer; }
+  .qchip:hover { border-color:var(--primary); color:var(--primary); }
+  .qchip.on { background:var(--primary); border-color:var(--primary); color:#fff; font-weight:600; }
+  .tipo-chip { background:var(--success-tint); color:var(--success); font-size:12px; font-weight:700; padding:4px 10px; border-radius:999px; white-space:nowrap; }
+  .toolbar select { flex:0 1 160px; width:auto; padding:10px 12px; background:var(--card); }
+
   [hidden] { display:none !important; }
 
   @media (max-width:520px) {
@@ -117,6 +126,7 @@
 
   <div class="toolbar">
     <input type="search" id="search" placeholder="Buscar por nome, CPF, telefone ou cidade…">
+    <select id="filtroTipo" aria-label="Filtrar por tipo de venda"><option value="">Todos os tipos</option></select>
     <button class="btn btn-principal" id="btnNew">+ Novo cliente</button>
     <button class="btn btn-secundario" id="btnExport">Exportar CSV</button>
     <button class="btn btn-ghost" id="btnRefresh">Atualizar</button>
@@ -143,13 +153,16 @@
     <div class="row2">
       <div>
         <label>Cidade</label>
-        <input id="f-cidade" placeholder="Ex: São João da Boa Vista - SP">
+        <input id="f-cidade" list="listaCidades" autocomplete="off" placeholder="Ex: São João da Boa Vista - SP">
+        <datalist id="listaCidades"></datalist>
       </div>
       <div>
         <label>CEP</label>
         <input id="f-cep" placeholder="Ex: 13860-000">
       </div>
     </div>
+
+    <div class="quick" id="quickCidades" aria-label="Cidades próximas"></div>
 
     <div class="row2">
       <div>
@@ -161,6 +174,10 @@
         <input id="f-complemento" placeholder="Apto/Sala">
       </div>
     </div>
+
+    <div class="section-title">Tipo de venda</div>
+    <div class="hint" style="margin-bottom:0">O que fizemos para este cliente (pode marcar mais de um).</div>
+    <div class="quick" id="quickTipos"></div>
 
     <div class="section-title">Informações extras</div>
     <label>Observações <span style="font-weight:400;color:var(--muted)">(opcional)</span></label>
@@ -197,7 +214,9 @@
     loaded: false,
     editingId: null,
     confirmDeleteId: null,
-    search: ""
+    search: "",
+    filtroTipo: "",
+    formTipos: []
   };
 
   var fmtMoney = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
@@ -219,6 +238,44 @@
       return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
     });
   };
+
+  // Cidades perto de São João da Boa Vista (as mais próximas primeiro)
+  var CIDADES = [
+    "São João da Boa Vista - SP", "Águas da Prata - SP", "Vargem Grande do Sul - SP", "Espírito Santo do Pinhal - SP",
+    "Santo Antônio do Jardim - SP", "São Sebastião da Grama - SP", "Tapiratiba - SP", "Casa Branca - SP",
+    "Aguaí - SP", "Itobi - SP", "Tambaú - SP", "São José do Rio Pardo - SP", "Divinolândia - SP", "Mococa - SP",
+    "Caconde - SP", "Santa Cruz das Palmeiras - SP", "Mogi Guaçu - SP", "Mogi Mirim - SP", "Itapira - SP",
+    "Pirassununga - SP", "Poços de Caldas - MG", "Andradas - MG"
+  ];
+  var TIPOS = ["Assistência", "Notebook", "MacBook", "PC", "Celular"];
+
+  // O tipo de venda fica numa primeira linha das observações: [Venda: Notebook, PC]
+  var RE_TIPO = /^\[Venda:\s*([^\]]*)\]\s*\n?/;
+  function lerObs(obs) {
+    var t = String(obs == null ? "" : obs), tipos = [];
+    var m = RE_TIPO.exec(t);
+    if (m) {
+      tipos = m[1].split(",").map(function (x) { return x.trim(); }).filter(function (x) { return TIPOS.indexOf(x) !== -1; });
+      t = t.slice(m[0].length);
+    }
+    return { tipos: tipos, texto: t };
+  }
+  function montarObs(tipos, texto) {
+    return (tipos.length ? "[Venda: " + tipos.join(", ") + "]" + (texto ? "\n" : "") : "") + texto;
+  }
+
+  // Remove os caracteres invisíveis que o WhatsApp coloca ao copiar o número
+  function limparTel(v) {
+    return String(v == null ? "" : v).replace(/[\u200e\u200f\u202a-\u202e\u2066-\u2069]/g, "").replace(/[\u2010-\u2015]/g, "-").replace(/\u00a0/g, " ").trim();
+  }
+  function waLink(tel, nome) {
+    var d = String(tel == null ? "" : tel).replace(/\D/g, "").replace(/^0+/, "");
+    if (d.length < 10) return "";
+    if (d.length <= 11) d = "55" + d;
+    var primeiro = String(nome || "").trim().split(/\s+/)[0];
+    var msg = "Olá" + (primeiro ? ", " + primeiro : "") + "! Tudo bem? Aqui é da Fiore Store.";
+    return "https://wa.me/" + d + "?text=" + encodeURIComponent(msg);
+  }
 
   var toastTimer = null;
   function toast(msg) {
@@ -279,10 +336,14 @@
 
   function filteredClientes() {
     var q = state.search.trim().toLowerCase();
+    var qd = q.replace(/\D/g, "");
     return state.clientes.filter(function (c) {
+      var o = lerObs(c.observacoes);
+      if (state.filtroTipo && o.tipos.indexOf(state.filtroTipo) === -1) return false;
       if (!q) return true;
-      var hay = [c.nome, c.cpf, c.telefone, c.cidade].join(" ").toLowerCase();
-      return hay.indexOf(q) !== -1;
+      var hay = [c.nome, c.cpf, c.telefone, c.cidade, o.tipos.join(" ")].join(" ").toLowerCase();
+      if (hay.indexOf(q) !== -1) return true;
+      return qd.length >= 4 && String(c.telefone || "").replace(/\D/g, "").indexOf(qd) !== -1;
     }).sort(function (a, b) { return (Number(b.criadoEm) || 0) - (Number(a.criadoEm) || 0); });
   }
 
@@ -330,6 +391,9 @@
     }).join("");
 
     var qtdCompras = (c.compras || []).length;
+    var obs = lerObs(c.observacoes);
+    var zap = waLink(c.telefone, c.nome);
+    var tiposHtml = obs.tipos.map(function (t) { return '<span class="tipo-chip">' + escapeHtml(t) + "</span>"; }).join("");
 
     var actions;
     if (state.confirmDeleteId === c.id) {
@@ -339,6 +403,7 @@
         '<button class="btn btn-ghost btn-sm" data-act="delete-no">Cancelar</button></div>';
     } else {
       actions = '<div class="cliente-actions">' +
+        (zap ? '<a class="btn btn-whats btn-sm" href="' + zap + '" target="_blank" rel="noopener">💬 Chamar no WhatsApp</a>' : '') +
         '<button class="btn btn-ghost btn-sm" data-act="edit" data-id="' + c.id + '">Editar</button>' +
         '<button class="btn btn-danger btn-sm" data-act="delete" data-id="' + c.id + '">Excluir</button>' +
         '</div>';
@@ -351,10 +416,10 @@
       '<div class="cliente-sub">' + escapeHtml(c.cpf || "CPF não informado") + "</div></div>" +
       '<span class="badge">' + qtdCompras + " compra" + (qtdCompras === 1 ? "" : "s") + '</span>' +
       "</div>" +
-      (chips ? '<div class="chips">' + chips + "</div>" : "") +
+      (chips || tiposHtml ? '<div class="chips">' + tiposHtml + chips + "</div>" : "") +
       (c.endereco ? '<div class="cliente-sub" style="margin-top:8px">' + escapeHtml(c.endereco) + (c.complemento ? ", " + escapeHtml(c.complemento) : "") + (c.cep ? " · " + escapeHtml(cepTexto(c.cep)) : "") + '</div>' : "") +
       renderCompras(c.compras) +
-      (c.observacoes ? '<div class="obs"><div class="obs-titulo">Informações extras</div>' + escapeHtml(c.observacoes) + '</div>' : "") +
+      (obs.texto ? '<div class="obs"><div class="obs-titulo">Informações extras</div>' + escapeHtml(obs.texto) + '</div>' : "") +
       actions +
       "</div>"
     );
@@ -377,10 +442,27 @@
     document.getElementById("f-cep").value = cliente ? cepTexto(cliente.cep) : "";
     document.getElementById("f-endereco").value = cliente ? cliente.endereco || "" : "";
     document.getElementById("f-complemento").value = cliente ? cliente.complemento || "" : "";
-    document.getElementById("f-observacoes").value = cliente ? cliente.observacoes || "" : "";
+    var ob = lerObs(cliente ? cliente.observacoes : "");
+    document.getElementById("f-observacoes").value = ob.texto;
+    state.formTipos = ob.tipos.slice();
+    renderTipos();
+    renderQuickCidades();
     document.getElementById("formPanel").hidden = false;
     document.getElementById("formPanel").scrollIntoView({ behavior: "smooth", block: "start" });
     document.getElementById("f-nome").focus();
+  }
+
+  function renderQuickCidades() {
+    var atual = document.getElementById("f-cidade").value.trim().toLowerCase();
+    document.getElementById("quickCidades").innerHTML = CIDADES.map(function (c) {
+      return '<button type="button" class="qchip' + (c.toLowerCase() === atual ? " on" : "") + '" data-cidade="' + escapeHtml(c) + '">' + escapeHtml(c.replace(" - SP", "")) + "</button>";
+    }).join("");
+  }
+
+  function renderTipos() {
+    document.getElementById("quickTipos").innerHTML = TIPOS.map(function (t) {
+      return '<button type="button" class="qchip' + (state.formTipos.indexOf(t) !== -1 ? " on" : "") + '" data-tipo="' + escapeHtml(t) + '">' + escapeHtml(t) + "</button>";
+    }).join("");
   }
 
   function closeForm() {
@@ -395,12 +477,12 @@
     var data = {
       nome: nome,
       cpf: document.getElementById("f-cpf").value.trim(),
-      telefone: document.getElementById("f-telefone").value.trim(),
+      telefone: limparTel(document.getElementById("f-telefone").value),
       cidade: document.getElementById("f-cidade").value.trim(),
       cep: document.getElementById("f-cep").value.trim(),
       endereco: document.getElementById("f-endereco").value.trim(),
       complemento: document.getElementById("f-complemento").value.trim(),
-      observacoes: document.getElementById("f-observacoes").value.trim()
+      observacoes: montarObs(state.formTipos, document.getElementById("f-observacoes").value.trim())
     };
 
     var isNew = !state.editingId;
@@ -443,14 +525,14 @@
   function exportCsv() {
     var list = filteredClientes();
     if (!list.length) { toast("Nenhum cliente para exportar."); return; }
-    var header = ["Nome", "CPF", "Telefone", "Cidade", "Endereço", "CEP", "Complemento", "Qtd. compras", "Total comprado (R$)", "Cadastrado em", "Observações"];
+    var header = ["Nome", "CPF", "Telefone", "Cidade", "Endereço", "CEP", "Complemento", "Qtd. compras", "Total comprado (R$)", "Cadastrado em", "Tipo de venda", "Observações"];
     if (MODO_FUNCIONARIO) header.splice(8, 1);
     var rows = list.map(function (c) {
       var compras = c.compras || [];
       var total = compras.reduce(function (s, cp) { return s + (Number(cp.valor) || 0); }, 0);
       var cols = [
         c.nome, c.cpf, c.telefone, c.cidade, c.endereco, cepTexto(c.cep), c.complemento,
-        compras.length, total.toFixed(2).replace(".", ","), fmtDate(c.criadoEm), c.observacoes
+        compras.length, total.toFixed(2).replace(".", ","), fmtDate(c.criadoEm), lerObs(c.observacoes).tipos.join(", "), lerObs(c.observacoes).texto
       ];
       if (MODO_FUNCIONARIO) cols.splice(8, 1);
       return cols.map(csvEscape).join(";");
@@ -524,6 +606,28 @@
       deleteCliente(id);
     }
   });
+
+  document.getElementById("listaCidades").innerHTML = CIDADES.map(function (c) { return '<option value="' + escapeHtml(c) + '">'; }).join("");
+  document.getElementById("filtroTipo").innerHTML = '<option value="">Todos os tipos</option>' + TIPOS.map(function (t) { return '<option>' + escapeHtml(t) + "</option>"; }).join("");
+  document.getElementById("filtroTipo").addEventListener("change", function (e) {
+    state.filtroTipo = e.target.value;
+    renderList();
+  });
+  document.getElementById("quickCidades").addEventListener("click", function (e) {
+    var b = e.target.closest("button[data-cidade]");
+    if (!b) return;
+    document.getElementById("f-cidade").value = b.getAttribute("data-cidade");
+    renderQuickCidades();
+  });
+  document.getElementById("f-cidade").addEventListener("input", renderQuickCidades);
+  document.getElementById("quickTipos").addEventListener("click", function (e) {
+    var b = e.target.closest("button[data-tipo]");
+    if (!b) return;
+    var t = b.getAttribute("data-tipo"), i = state.formTipos.indexOf(t);
+    if (i === -1) state.formTipos.push(t); else state.formTipos.splice(i, 1);
+    renderTipos();
+  });
+  document.getElementById("f-telefone").addEventListener("blur", function (e) { e.target.value = limparTel(e.target.value); });
 
   loadClientes();
 })();
