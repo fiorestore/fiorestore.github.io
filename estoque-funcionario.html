@@ -84,6 +84,7 @@
   #fotoLightbox { position:fixed; inset:0; background:rgba(0,0,0,.88); display:flex; align-items:center; justify-content:center; z-index:200; cursor:zoom-out; }
   #fotoLightbox[hidden] { display:none; }
   #fotoLightbox img { max-width:94vw; max-height:90vh; border-radius:8px; }
+  .chip.chip-qtd { background:var(--brand); color:#fff; font-weight:700; }
   .chips { display:flex; flex-wrap:wrap; gap:6px; margin-top:12px; }
   .chip { background:var(--brand-tint); color:var(--primary-dark); font-size:12.5px; padding:5px 10px; border-radius:7px; }
 
@@ -451,9 +452,13 @@
   document.getElementById("etqOverlay").addEventListener("click", function (e) { if (e.target === this) this.hidden = true; });
   document.getElementById("etqImprimir").addEventListener("click", function () { window.print(); });
 
+  function qtdDe(d) { return Math.max(1, parseInt(d && d.quantidade, 10) || 1); }
+
   function renderDevice(d) {
     var status = normalizeStatus(d.status);
-    var chips = [d.tipo, d.condicao, d.processador, d.ram, d.armazenamento, d.gpu]
+    var qtd = qtdDe(d);
+    var qtdChip = status !== "vendido" ? '<span class="chip chip-qtd">📦 ' + qtd + (qtd === 1 ? " unidade" : " unidades") + "</span>" : "";
+    var chips = qtdChip + [d.tipo, d.condicao, d.processador, d.ram, d.armazenamento, d.gpu]
       .filter(Boolean).map(function (c) { return '<span class="chip">' + escapeHtml(c) + "</span>"; }).join("");
 
     var meta = "Entrada em " + fmtDate(d.dataEntrada);
@@ -466,7 +471,7 @@
     } else if (status === "disponivel") {
       moveBtns =
         linkBtns(d) +
-        '<button class="btn btn-secundario btn-sm" data-act="to-vendido" data-id="' + d.id + '">Marcar como vendido</button>' +
+        '<button class="btn btn-secundario btn-sm" data-act="to-vendido" data-id="' + d.id + '">' + (qtd > 1 ? "Vendi 1 (restam " + (qtd - 1) + ")" : "Marcar como vendido") + '</button>' +
         '<button class="btn btn-ghost btn-sm" data-act="to-preparacao" data-id="' + d.id + '">Voltar p/ preparação</button>';
     } else {
       moveBtns = '<button class="btn btn-secundario btn-sm" data-act="to-disponivel" data-id="' + d.id + '">Reverter p/ disponível</button>';
@@ -521,7 +526,7 @@
       // Mostra só modelo/specs/preço de venda — nunca exibe o campo "custo" que a API retorna.
       state.devices = (res.devices || []).map(function (d) {
         return { id: d.id, modelo: d.modelo, tipo: d.tipo, condicao: d.condicao, processador: d.processador,
-          ram: d.ram, armazenamento: d.armazenamento, gpu: d.gpu, numeroSerie: d.numeroSerie, observacoes: d.observacoes,
+          ram: d.ram, armazenamento: d.armazenamento, gpu: d.gpu, numeroSerie: d.numeroSerie, observacoes: d.observacoes, quantidade: d.quantidade,
           venda: d.venda, status: d.status, dataEntrada: d.dataEntrada, dataVenda: d.dataVenda, criadoEm: d.criadoEm };
       });
       state.loaded = true;
@@ -573,7 +578,11 @@
     else if (act === "etiqueta") abrirEtiqueta(id);
     else if (act === "to-preparacao") setStatus(id, "preparacao", "", "Voltou para preparação.");
     else if (act === "to-disponivel") setStatus(id, "disponivel", "", "Marcado como disponível.");
-    else if (act === "to-vendido") setStatus(id, "vendido", todayISO(), "Marcado como vendido.");
+    else if (act === "to-vendido") {
+      var dvend = state.devices.find(function (x) { return x.id === id; });
+      var qv = dvend ? qtdDe(dvend) : 1;
+      setStatus(id, "vendido", todayISO(), qv > 1 ? "1 unidade vendida. Restam " + (qv - 1) + "." : "Marcado como vendido.");
+    }
   });
 
 

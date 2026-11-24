@@ -106,6 +106,7 @@
   .badge-vendido { background:var(--success-tint); color:var(--success); }
 
   .chips { display:flex; flex-wrap:wrap; gap:6px; margin-top:12px; }
+  .chip.chip-qtd { background:var(--brand); color:#fff; font-weight:700; }
   .chip { background:var(--brand-tint); color:var(--primary-dark); font-size:12.5px; padding:5px 10px; border-radius:7px; }
 
   .values { display:flex; gap:20px; margin-top:12px; flex-wrap:wrap; font-size:13.5px; }
@@ -277,10 +278,14 @@
         <input id="f-dataEntrada" type="date">
       </div>
       <div>
-        <label>Número de série <span style="font-weight:400;color:var(--muted)">(opcional)</span></label>
-        <input id="f-serial" placeholder="Ex: C02XXXXXXXXX">
+        <label>Quantidade em estoque</label>
+        <input id="f-quantidade" type="number" min="1" step="1" inputmode="numeric" value="1">
       </div>
     </div>
+    <div class="hint" style="margin-top:6px">Quantas unidades iguais você tem. A cada venda o sistema desconta 1 unidade.</div>
+
+    <label>Número de série <span style="font-weight:400;color:var(--muted)">(opcional, de 1 unidade)</span></label>
+    <input id="f-serial" placeholder="Ex: C02XXXXXXXXX">
 
     <label>Observações <span style="font-weight:400;color:var(--muted)">(opcional)</span></label>
     <textarea id="f-observacoes" placeholder="Marcas de uso, bateria, acessórios inclusos…"></textarea>
@@ -401,16 +406,18 @@
   function computeStats(list) {
     var naoVendidos = list.filter(function (d) { return normalizeStatus(d.status) !== "vendido"; });
     var vendidos = list.filter(function (d) { return normalizeStatus(d.status) === "vendido"; });
-    var investido = naoVendidos.reduce(function (s, d) { return s + (Number(d.custo) || 0); }, 0);
-    var potencial = naoVendidos.reduce(function (s, d) { return s + (Number(d.venda) || 0); }, 0);
+    var investido = naoVendidos.reduce(function (s, d) { return s + (Number(d.custo) || 0) * qtdDe(d); }, 0);
+    var unidades = naoVendidos.reduce(function (s, d) { return s + qtdDe(d); }, 0);
+    var potencial = naoVendidos.reduce(function (s, d) { return s + (Number(d.venda) || 0) * qtdDe(d); }, 0);
     var lucroPotencial = potencial - investido;
     var lucroRealizado = vendidos.reduce(function (s, d) { return s + ((Number(d.venda) || 0) - (Number(d.custo) || 0)); }, 0);
-    return { investido: investido, potencial: potencial, lucroPotencial: lucroPotencial, qtdVendidos: vendidos.length, lucroRealizado: lucroRealizado };
+    return { unidades: unidades, investido: investido, potencial: potencial, lucroPotencial: lucroPotencial, qtdVendidos: vendidos.length, lucroRealizado: lucroRealizado };
   }
 
   function renderStats() {
     var s = computeStats(devicesDaSecao());
     var tiles = [
+      ["Unidades em estoque", s.unidades + (s.unidades === 1 ? " unidade" : " unidades"), ""],
       ["Investido em estoque", fmtMoney.format(s.investido), ""],
       ["Valor potencial de venda", fmtMoney.format(s.potencial), "brand"],
       ["Lucro potencial", fmtMoney.format(s.lucroPotencial), "success"],
@@ -716,11 +723,16 @@
   document.getElementById("etqOverlay").addEventListener("click", function (e) { if (e.target === this) this.hidden = true; });
   document.getElementById("etqImprimir").addEventListener("click", function () { window.print(); });
 
+  function qtdDe(d) { return Math.max(1, parseInt(d && d.quantidade, 10) || 1); }
+
   function renderDevice(d) {
     var status = normalizeStatus(d.status);
     var custo = Number(d.custo) || 0;
     var margem = (Number(d.venda) || 0) - custo;
-    var chips = [d.tipo, d.condicao, d.processador, d.ram, d.armazenamento, d.gpu]
+    var qtd = qtdDe(d);
+    var un = qtd > 1 && status !== "vendido" ? " (cada)" : "";
+    var qtdChip = status !== "vendido" ? '<span class="chip chip-qtd">📦 ' + qtd + (qtd === 1 ? " unidade" : " unidades") + "</span>" : "";
+    var chips = qtdChip + [d.tipo, d.condicao, d.processador, d.ram, d.armazenamento, d.gpu]
       .filter(Boolean).map(function (c) { return '<span class="chip">' + escapeHtml(c) + "</span>"; }).join("");
 
     var meta = "Entrada em " + fmtDate(d.dataEntrada);
@@ -740,7 +752,7 @@
       } else if (status === "disponivel") {
         moveBtns =
           linkBtns(d) +
-          '<button class="btn btn-secundario btn-sm" data-act="to-vendido" data-id="' + d.id + '">Marcar como vendido</button>' +
+          '<button class="btn btn-secundario btn-sm" data-act="to-vendido" data-id="' + d.id + '">' + (qtd > 1 ? "Vendi 1 (restam " + (qtd - 1) + ")" : "Marcar como vendido") + '</button>' +
           '<button class="btn btn-ghost btn-sm" data-act="to-preparacao" data-id="' + d.id + '">Voltar p/ preparação</button>';
       } else {
         moveBtns = '<button class="btn btn-secundario btn-sm" data-act="to-disponivel" data-id="' + d.id + '">Reverter p/ disponível</button>';
@@ -754,9 +766,9 @@
     }
 
     var valuesHtml = '<div class="values">' +
-      '<div class="item"><div class="k">Custo</div><div class="v">' + fmtMoney.format(custo) + "</div></div>" +
-      '<div class="item"><div class="k">Venda</div><div class="v">' + fmtMoney.format(Number(d.venda) || 0) + "</div></div>" +
-      '<div class="item"><div class="k">Margem</div><div class="v ' + (margem >= 0 ? "pos" : "neg") + '">' + fmtMoney.format(margem) + "</div></div>" +
+      '<div class="item"><div class="k">Custo' + un + '</div><div class="v">' + fmtMoney.format(custo) + "</div></div>" +
+      '<div class="item"><div class="k">Venda' + un + '</div><div class="v">' + fmtMoney.format(Number(d.venda) || 0) + "</div></div>" +
+      '<div class="item"><div class="k">Margem' + un + '</div><div class="v ' + (margem >= 0 ? "pos" : "neg") + '">' + fmtMoney.format(margem) + "</div></div>" +
       "</div>";
 
     return (
@@ -866,6 +878,7 @@
     document.getElementById("f-venda").value = device ? device.venda || "" : "";
     document.getElementById("f-dataEntrada").value = device ? device.dataEntrada || todayISO() : todayISO();
     document.getElementById("f-serial").value = device ? device.numeroSerie || "" : "";
+    document.getElementById("f-quantidade").value = device ? qtdDe(device) : 1;
     var po = parseObs(device ? device.observacoes : "");
     document.getElementById("f-observacoes").value = po.texto;
     document.getElementById("f-pc-placa").value = po.comp.placa || "";
@@ -901,6 +914,7 @@
       venda: parseFloat(document.getElementById("f-venda").value) || 0,
       dataEntrada: document.getElementById("f-dataEntrada").value || todayISO(),
       numeroSerie: document.getElementById("f-serial").value.trim(),
+      quantidade: Math.max(1, parseInt(document.getElementById("f-quantidade").value, 10) || 1),
       observacoes: buildObs(compDoForm(), document.getElementById("f-observacoes").value.trim())
     };
 
@@ -965,12 +979,12 @@
   function exportCsv() {
     var list = filteredDevices();
     if (!list.length) { toast("Nenhum aparelho para exportar."); return; }
-    var header = ["Modelo", "Tipo", "Condição", "Processador", "RAM", "Armazenamento", "Placa de vídeo", "Número de série", "Custo (R$)", "Venda (R$)", "Margem (R$)", "Status", "Data de entrada", "Data de venda", "Observações"];
+    var header = ["Modelo", "Tipo", "Condição", "Processador", "RAM", "Armazenamento", "Placa de vídeo", "Número de série", "Quantidade", "Custo (R$)", "Venda (R$)", "Margem (R$)", "Status", "Data de entrada", "Data de venda", "Observações"];
     var rows = list.map(function (d) {
       var custo = Number(d.custo) || 0;
       var margem = (Number(d.venda) || 0) - custo;
       return [
-        d.modelo, d.tipo, d.condicao, d.processador, d.ram, d.armazenamento, d.gpu, d.numeroSerie,
+        d.modelo, d.tipo, d.condicao, d.processador, d.ram, d.armazenamento, d.gpu, d.numeroSerie, qtdDe(d),
         custo.toFixed(2).replace(".", ","), (Number(d.venda) || 0).toFixed(2).replace(".", ","), margem.toFixed(2).replace(".", ","),
         STATUS_LABEL[normalizeStatus(d.status)] || d.status, fmtDate(d.dataEntrada), fmtDate(d.dataVenda), d.observacoes
       ].map(csvEscape).join(";");
@@ -1107,7 +1121,9 @@
     } else if (act === "to-disponivel") {
       setStatus(id, "disponivel", "", "Marcado como disponível.");
     } else if (act === "to-vendido") {
-      setStatus(id, "vendido", todayISO(), "Marcado como vendido.");
+      var dvend = state.devices.find(function (x) { return x.id === id; });
+      var qv = dvend ? qtdDe(dvend) : 1;
+      setStatus(id, "vendido", todayISO(), qv > 1 ? "1 unidade vendida. Restam " + (qv - 1) + "." : "Marcado como vendido.");
     } else if (act === "delete") {
       state.confirmDeleteId = id;
       renderList();

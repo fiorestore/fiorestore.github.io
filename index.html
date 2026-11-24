@@ -367,7 +367,7 @@
         const select = document.getElementById('estoqueSelect');
         const opcoes = ['<option value="">— Digitar manualmente —</option>'].concat(
           estoqueDevices.map(function (d) {
-            return '<option value="' + d.id + '">' + montarDescricaoAparelho(d) + ' — R$ ' + (Number(d.venda) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 }) + '</option>';
+            return '<option value="' + d.id + '">' + montarDescricaoAparelho(d) + ' — R$ ' + (Number(d.venda) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 }) + (parseInt(d.quantidade, 10) > 1 ? ' · ' + parseInt(d.quantidade, 10) + ' un.' : '') + '</option>';
           })
         );
         select.innerHTML = opcoes.join('');
