@@ -43,6 +43,11 @@
   .link-box button { width:auto; margin:0; padding:10px 14px; white-space:nowrap; }
   .voltar { display:inline-block; margin-top:16px; color:var(--muted); font-size:13px; text-decoration:none; text-align:center; width:100%; }
   .rodape { text-align:center; color:var(--muted); font-size:12px; margin-top:24px; }
+  .gar-chips { display:flex; flex-wrap:wrap; gap:8px; margin-top:6px; }
+  .gar-chip { flex:none; width:auto; margin:0; padding:10px 14px; border:1px solid var(--border); background:#fff; color:var(--text); border-radius:999px; font-size:14px; font-weight:600; cursor:pointer; font-family:inherit; }
+  .gar-chip.ativa { background:var(--brand); border-color:var(--brand); color:#fff; }
+  .gar-outro { margin-top:8px; }
+  .gar-outro[hidden] { display:none; }
   .check-entrega { display:flex; align-items:center; gap:10px; margin:16px 0 0; padding:12px 14px; background:var(--brand-tint); border-radius:10px; font-size:14px; font-weight:600; cursor:pointer; }
   .check-entrega input { width:auto; margin:0; flex:none; }
   .check-entrega small { display:block; font-weight:400; color:var(--muted); font-size:12px; margin-top:2px; }
@@ -134,6 +139,24 @@
       </div>
       <label>Forma de pagamento</label>
       <input type="text" id="formaPagamento" placeholder="Ex: Pix, à vista">
+
+      <label>Garantia <span style="font-weight:400;color:var(--muted)">(padrão: 3 meses)</span></label>
+      <div class="gar-chips" id="garChips">
+        <button type="button" class="gar-chip" data-g="7 dias">7 dias</button>
+        <button type="button" class="gar-chip" data-g="15 dias">15 dias</button>
+        <button type="button" class="gar-chip" data-g="30 dias">30 dias</button>
+        <button type="button" class="gar-chip" data-g="2 meses">2 meses</button>
+        <button type="button" class="gar-chip ativa" data-g="3 meses">3 meses</button>
+        <button type="button" class="gar-chip" data-g="6 meses">6 meses</button>
+        <button type="button" class="gar-chip" data-g="12 meses">12 meses</button>
+        <button type="button" class="gar-chip" data-g="outro">Outro…</button>
+      </div>
+      <div class="gar-outro" id="garOutro" hidden>
+        <div class="row">
+          <div><input type="number" id="garNum" min="1" max="1825" inputmode="numeric" placeholder="Ex: 45"></div>
+          <div><select id="garUn"><option value="dias">dias</option><option value="meses">meses</option></select></div>
+        </div>
+      </div>
 
       <label>Data da venda</label>
       <input type="date" id="data">
@@ -306,6 +329,7 @@
     aparelhoEstoqueId: paramsUrl.get('aparelhoEstoqueId') || '',
     entrega: paramsUrl.get('entrega') || ''
   };
+  if (paramsUrl.get('garantia')) dadosVendaServidor.garantia = paramsUrl.get('garantia'); // só links novos (mantém a assinatura dos antigos)
   const LT = paramsUrl.get('lt') || '';
   const SP = LT ? JSON.stringify(dadosVendaServidor) : '';
   let temDadosDaVenda = !!dadosVendaServidor.produto;
@@ -381,12 +405,39 @@
       '<b>Valor:</b> R$ ' + dadosVenda.valor + '<br>' +
       '<b>Forma de pagamento:</b> ' + dadosVenda.formaPagamento + '<br>' +
       '<b>Data da venda:</b> ' + formatarDataExibicao(dadosVenda.data) + '<br>' +
+      '<b>Garantia:</b> ' + garantiaLegivel(dadosVenda.garantia) + '<br>' +
       '<b>Recebimento:</b> ' + (dadosVenda.entrega === '1' ? 'Entrega no endereço informado' : 'Retirada na loja');
   }
 
   if (temDadosDaVenda) {
     mostrarEtapa2(dadosVendaServidor);
   }
+
+  // ---- Garantia (prazo que sai escrito no contrato) ----
+  let garSel = '3 meses';
+  function garantiaAtual() {
+    if (garSel === 'outro') {
+      const n = parseInt(document.getElementById('garNum').value, 10);
+      const un = document.getElementById('garUn').value;
+      if (!n || n < 1 || (un === 'meses' && n > 120) || (un === 'dias' && n > 1825)) return null;
+      return n + ' ' + un;
+    }
+    return garSel;
+  }
+  function garantiaLegivel(g) {
+    const m = String(g || '').match(/^(\d+) (dias|meses)$/);
+    if (!m) return '3 meses';
+    const n = parseInt(m[1], 10);
+    return n + ' ' + (n === 1 ? (m[2] === 'dias' ? 'dia' : 'mês') : m[2]);
+  }
+  document.getElementById('garChips').addEventListener('click', function (e) {
+    const b = e.target.closest('button[data-g]');
+    if (!b) return;
+    garSel = b.getAttribute('data-g');
+    Array.prototype.forEach.call(this.querySelectorAll('.gar-chip'), function (x) { x.classList.toggle('ativa', x === b); });
+    document.getElementById('garOutro').hidden = garSel !== 'outro';
+    if (garSel === 'outro') document.getElementById('garNum').focus();
+  });
 
   function dadosEtapa1() {
     return {
@@ -396,13 +447,18 @@
       formaPagamento: document.getElementById('formaPagamento').value.trim(),
       data: document.getElementById('data').value,
       aparelhoEstoqueId: aparelhoEstoqueSelecionadoId,
-      entrega: document.getElementById('entrega').checked ? '1' : ''
+      entrega: document.getElementById('entrega').checked ? '1' : '',
+      garantia: garantiaAtual() || ''
     };
   }
 
   function validarEtapa1(d) {
     if (!d.produto || !d.valor || !d.formaPagamento || !d.data) {
       alert('Preencha produto, valor, forma de pagamento e data da venda.');
+      return false;
+    }
+    if (garantiaAtual() === null) {
+      alert('Informe o prazo da garantia (um número de dias ou de meses).');
       return false;
     }
     return true;
@@ -499,7 +555,8 @@
       condicao: dadosVenda.condicao,
       valor: dadosVenda.valor,
       formaPagamento: dadosVenda.formaPagamento,
-      data: formatarDataBR(dadosVenda.data)
+      data: formatarDataBR(dadosVenda.data),
+      garantia: dadosVenda.garantia || ''
     });
 
     try {
