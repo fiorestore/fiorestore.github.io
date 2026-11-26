@@ -1,8 +1,66 @@
 <!doctype html>
 <html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Atualizar macOS sem pendrive | Fiore Store</title><style>
-*{box-sizing:border-box}body{margin:0;background:#fff;color:#191919;font:16px/1.6 system-ui,sans-serif}main{max-width:790px;margin:auto;padding:22px clamp(16px,4vw,36px) 44px}a{color:#994500;text-underline-offset:.18em;overflow-wrap:anywhere}h1{font-size:clamp(1.55rem,5vw,2.3rem);line-height:1.15;margin-bottom:.4rem}h2{font-size:1.25rem;line-height:1.25;margin:1.6rem 0 .75rem}h3{margin-top:1.5rem}ol p,ul p{margin:.24rem 0}figure{margin:1rem 0}img{display:block;max-width:100%;height:auto;border-radius:12px;border:1px solid #dedede}figcaption{font-size:.85rem;color:#555;margin-top:.35rem}.systems{display:grid;grid-template-columns:1fr 1fr;gap:12px}.systems img{width:100%;aspect-ratio:16/10;object-fit:cover}.systems figure{margin:.3rem 0}.panel,fieldset{border:1px solid #dedede;border-radius:12px;background:#f7f7f7;padding:14px}.panel p{margin:.3rem 0;padding:.4rem .6rem;border-radius:6px;background:white}.panel .pick{border:2px solid #a04900;background:#fff1df}.pick strong{margin-left:.55rem;color:#853d00;font-size:.78rem}.note{background:#fff3e3;border-left:4px solid #ff861e;padding:.7rem 1rem}fieldset{min-width:0}fieldset label{display:block;padding:.3rem}output{display:block;margin-left:.3rem;font-weight:bold}footer{border-top:1px solid #ddd;margin-top:2rem;padding-top:1rem}footer p{margin:.2rem 0}footer a{display:inline-block;margin-top:.7rem;background:#ff861e;color:#191919;padding:.65rem 1rem;border-radius:8px;font-weight:700}
-</style></head><body><main><nav aria-label="Navegação"><a href="../opencore/">← Central de Suporte</a></nav>
-<h1>FIORE STORE | Manual de atualização do macOS</h1>
+:root{color-scheme:dark;--accent:#ff861e;--bg:#121212;--panel:#1e1e1e;--text:#fafafa;--muted:#bdbdbd;--border:#393939;font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
+*{box-sizing:border-box}
+body{margin:0;background:#f8f7f5;color:var(--text);line-height:1.55}
+.shell{width:min(760px,calc(100% - 28px));margin:18px auto;background:var(--bg);border-radius:18px;padding:16px clamp(16px,3vw,27px)}
+header{display:flex;justify-content:space-between;align-items:center;gap:1rem;border-bottom:1px solid var(--border);padding:0 0 16px}
+.brand{font-size:clamp(1.55rem,5vw,2.15rem);font-weight:830;color:var(--accent);letter-spacing:-.045em;text-decoration:none}
+a{color:#ffab67;text-underline-offset:.18em;overflow-wrap:anywhere}
+a:hover{text-decoration-thickness:2px}
+:focus-visible{outline:2px solid #ffad61;outline-offset:4px}
+.menu{position:relative}
+.menu summary{cursor:pointer;border:1px solid var(--border);border-radius:9px;padding:7px 12px;font-size:.85rem}
+.menu nav{position:absolute;right:0;top:calc(100% + .5rem);z-index:2;display:grid;gap:.6rem;min-width:165px;padding:1rem;background:#242424;border:1px solid var(--border);border-radius:12px}
+h1{font-size:clamp(1.9rem,5vw,2.55rem);line-height:1.12;letter-spacing:-.045em;margin:24px 0 10px}
+.intro{margin:0 0 18px;color:var(--muted)}
+.topic{background:var(--panel);margin:0 0 12px;border-radius:13px;scroll-margin-top:12px}
+.topic>summary{display:grid;grid-template-columns:24px minmax(0,1fr) 14px;gap:12px;align-items:center;list-style:none;cursor:pointer;padding:13px 15px;border-radius:13px;min-height:66px}
+summary::-webkit-details-marker{display:none}
+.topic>summary:hover{background:#282828}
+.topic>summary::after{content:"›";color:var(--accent);font-size:1.55rem;line-height:1;text-align:center}
+.topic[open]>summary::after{transform:rotate(90deg)}
+.icon{color:var(--accent);font-size:1.45rem;line-height:1;text-align:center}
+strong,small{display:block}
+small{color:var(--muted);font-size:.85rem;margin-top:2px}
+.body{padding:15px;border-top:1px solid var(--border);color:#e5e5e5}
+.body p{margin:0 0 .8rem}
+.note{background:#332719;border-left:3px solid var(--accent);padding:.75rem}
+.steps{padding-left:1.6rem;margin:0 0 1rem}
+.steps li{padding:.85rem 0 .85rem .2rem;border-bottom:1px solid var(--border)}
+.steps li::marker{color:var(--accent);font-weight:750}
+h3{margin:0 0 .4rem;font-size:1.05rem;color:var(--text)}
+.diagram{margin:.6rem 0 .2rem;border:1px solid #505050;border-radius:9px;overflow:hidden;background:#141414;font-size:.83rem}
+.window{background:#303030;padding:.4rem .65rem;font-weight:650}
+.window span{color:var(--accent);padding-right:.5rem;letter-spacing:.08rem}
+.choices{display:grid;gap:.35rem;padding:.6rem}
+.choice{display:block;border-radius:5px;background:#272727;padding:.3rem .55rem;overflow-wrap:anywhere}
+.choice:first-child{background:#3b2a1a;border:1px solid #98734e}
+figcaption{padding:0 .65rem .45rem;color:var(--muted);font-size:.75rem}
+.faq{margin:0}
+.faq dt{font-weight:740}
+.faq dd{margin:0 0 .9rem}
+.cta{display:block;text-align:center;background:var(--accent);color:#181009;font-weight:740;text-decoration:none;padding:12px;border-radius:11px;margin-top:15px}
+.cta:hover{background:#ff9b48}
+footer{text-align:center;color:var(--muted);font-size:.8rem;padding:13px 0 1px}
+@media(max-width:460px){.shell{width:100%;margin:0;border-radius:0;min-height:100vh}.topic>summary{gap:9px}}
+
+.guide{background:var(--panel);border-radius:13px;padding:clamp(15px,4vw,24px);margin-bottom:14px}
+.guide h2{font-size:clamp(1.15rem,4vw,1.45rem);line-height:1.25;margin:0 0 12px}
+.guide strong{display:inline}
+.guide figure{margin:1rem 0}
+.guide img{display:block;max-width:100%;height:auto;border-radius:8px}
+.guide figcaption{padding:.5rem 0 0}
+.guide ol{padding-left:1.5rem}
+.guide li+li{margin-top:.45rem}
+.guide code{overflow-wrap:anywhere}
+.guide .download{display:inline-block;margin:.25rem 0;background:var(--accent);color:#181009;padding:.65rem .9rem;border-radius:9px;font-weight:740;text-decoration:none}
+.back{font-size:.9rem}
+.office-installers{font-size:clamp(1.05rem,3vw,1.25rem);padding:16px;margin:14px 0 16px}
+
+.manual h2{font-size:clamp(1.15rem,4vw,1.45rem);line-height:1.25;margin:1.65rem 0 .8rem}.manual figure{margin:1rem 0}.manual img{display:block;max-width:100%;height:auto;border:1px solid var(--border);border-radius:9px}.manual figcaption{padding:.45rem 0 0}.manual strong{display:inline}.manual ol,.manual ul{padding-left:1.55rem}.manual li p{margin:.35rem 0}.systems{display:grid;grid-template-columns:1fr 1fr;gap:12px}.systems img{width:100%;aspect-ratio:16/10;object-fit:cover}.panel,fieldset{min-width:0;border:1px solid var(--border);border-radius:12px;background:var(--panel);padding:14px}.panel p{margin:.4rem 0;padding:.45rem .6rem;border-radius:6px;background:#292929;overflow-wrap:anywhere}.panel .pick{border:1px solid var(--accent);background:#332719}.pick strong{color:#ffab67;margin-left:.4rem;font-size:.8rem}fieldset label{display:block;padding:.3rem}fieldset output{display:block;margin-left:.3rem;font-weight:bold}footer p{margin:.25rem 0}
+</style></head><body><div class="shell"><header><a class="brand" href="../opencore/">FIORE STORE</a><a class="back" href="../opencore/">Central de Suporte</a></header><main class="manual">
+<h1>Manual de atualização do macOS</h1>
 <h2>Método 1 – Sem pendrive e sem formatação</h2>
 <div class="systems"><figure><img src="https://images.openai.com/static-rsc-4/ItYa0U0CKABCRPp8JLWG4dHigRiTDYV2Pou_cOslNJM41PPtuqa5Ajm5HzVgTBwmlz-tvUcj3YE4-6xjG29-J8B0V9zo7w4TpKfTufEctpSG9xqmNA0u1jhOklOghw8Zfq-plUHq0_uoWSwcjE6zmNbr34F71kpWhc199BMKH4Q?purpose=inline" alt="macOS Ventura 13" width="1322" height="860" decoding="async"><figcaption>Sistema atual<br><strong>macOS Ventura 13</strong></figcaption></figure><figure><img src="https://images.openai.com/static-rsc-4/og8RjGzAj8raYSjwP5rIOhzKf2U9DmMbdskwMUJ-9u8NmzJX1eCQsncsOVicPXLPDh7qaMOBlvdYScH-tgEZM8k_X47AXT9mpdBKJsGEyv39wEPfl-q9TmwTlw8m1jM8Yfi2RHE4JKacxh4VKxRdbpFa3F8_6Df9zzgHRz6_KMA?purpose=inline" alt="macOS Sonoma 14" width="864" height="540" decoding="async"><figcaption>Novo sistema<br><strong>macOS Sonoma 14</strong></figcaption></figure></div>
 <p>Este manual ensina como atualizar o sistema operacional do seu Mac utilizando o OpenCore Legacy Patcher, sem precisar de pendrive ou formatar o computador, buscando preservar seus arquivos e aplicativos.</p>
@@ -96,5 +154,4 @@
 <p>Pronto! Seu Mac está atualizado para o macOS Sonoma.</p>
 <h2>Informações importantes</h2>
 <ul><li><p>Não é necessário utilizar pendrive.</p></li><li><p>Não é necessário formatar o Mac.</p></li><li><p>O procedimento busca preservar os arquivos e aplicativos.</p></li><li><p>Faça sempre um backup antes da atualização.</p></li><li><p>Não instale outras versões do macOS sem consultar nossa equipe.</p></li><li><p>Caso apareça algum erro, entre em contato com nosso suporte.</p></li></ul>
-<footer><strong>FIORE STORE</strong><p>Suporte técnico e pós-venda</p><p>Tecnologia, qualidade e confiança.</p><p>@fiore_hardware</p><a href="https://wa.me/5519994161157">Falar com a FIORE</a></footer>
-</main><script>const list=document.getElementById('checklist');list.addEventListener('change',()=>{list.querySelector('output').textContent=list.querySelectorAll('input:checked').length+'/10'});</script></body></html>
+</main><footer><strong>FIORE STORE</strong><p>Suporte técnico e pós-venda</p><p>Tecnologia, qualidade e confiança.</p><p>@fiore_hardware</p><a class="cta" href="https://wa.me/5519994161157">Falar com a FIORE</a></footer></div><script>const list=document.getElementById('checklist');list.addEventListener('change',()=>{list.querySelector('output').textContent=list.querySelectorAll('input:checked').length+'/10'});</script></body></html>
