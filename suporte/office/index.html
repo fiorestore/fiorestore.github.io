@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="Guia ilustrado da Fiore Store para instalar e ativar o Office LTSC 2024 no macOS Ventura.">
+<title>Office no Mac | Fiore Store</title>
+<style>
+:root{color-scheme:dark;--accent:#ff861e;--bg:#121212;--panel:#1e1e1e;--text:#fafafa;--muted:#bdbdbd;--border:#393939;font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
+*{box-sizing:border-box}
+body{margin:0;background:#f8f7f5;color:var(--text);line-height:1.55}
+.shell{width:min(760px,calc(100% - 28px));margin:18px auto;background:var(--bg);border-radius:18px;padding:16px clamp(16px,3vw,27px)}
+header{display:flex;justify-content:space-between;align-items:center;gap:1rem;border-bottom:1px solid var(--border);padding:0 0 16px}
+.brand{font-size:clamp(1.55rem,5vw,2.15rem);font-weight:830;color:var(--accent);letter-spacing:-.045em;text-decoration:none}
+a{color:#ffab67;text-underline-offset:.18em;overflow-wrap:anywhere}
+a:hover{text-decoration-thickness:2px}
+:focus-visible{outline:2px solid #ffad61;outline-offset:4px}
+.menu{position:relative}
+.menu summary{cursor:pointer;border:1px solid var(--border);border-radius:9px;padding:7px 12px;font-size:.85rem}
+.menu nav{position:absolute;right:0;top:calc(100% + .5rem);z-index:2;display:grid;gap:.6rem;min-width:165px;padding:1rem;background:#242424;border:1px solid var(--border);border-radius:12px}
+h1{font-size:clamp(1.9rem,5vw,2.55rem);line-height:1.12;letter-spacing:-.045em;margin:24px 0 10px}
+.intro{margin:0 0 18px;color:var(--muted)}
+.topic{background:var(--panel);margin:0 0 12px;border-radius:13px;scroll-margin-top:12px}
+.topic>summary{display:grid;grid-template-columns:24px minmax(0,1fr) 14px;gap:12px;align-items:center;list-style:none;cursor:pointer;padding:13px 15px;border-radius:13px;min-height:66px}
+summary::-webkit-details-marker{display:none}
+.topic>summary:hover{background:#282828}
+.topic>summary::after{content:"›";color:var(--accent);font-size:1.55rem;line-height:1;text-align:center}
+.topic[open]>summary::after{transform:rotate(90deg)}
+.icon{color:var(--accent);font-size:1.45rem;line-height:1;text-align:center}
+strong,small{display:block}
+small{color:var(--muted);font-size:.85rem;margin-top:2px}
+.body{padding:15px;border-top:1px solid var(--border);color:#e5e5e5}
+.body p{margin:0 0 .8rem}
+.note{background:#332719;border-left:3px solid var(--accent);padding:.75rem}
+.steps{padding-left:1.6rem;margin:0 0 1rem}
+.steps li{padding:.85rem 0 .85rem .2rem;border-bottom:1px solid var(--border)}
+.steps li::marker{color:var(--accent);font-weight:750}
+h3{margin:0 0 .4rem;font-size:1.05rem;color:var(--text)}
+.diagram{margin:.6rem 0 .2rem;border:1px solid #505050;border-radius:9px;overflow:hidden;background:#141414;font-size:.83rem}
+.window{background:#303030;padding:.4rem .65rem;font-weight:650}
+.window span{color:var(--accent);padding-right:.5rem;letter-spacing:.08rem}
+.choices{display:grid;gap:.35rem;padding:.6rem}
+.choice{display:block;border-radius:5px;background:#272727;padding:.3rem .55rem;overflow-wrap:anywhere}
+.choice:first-child{background:#3b2a1a;border:1px solid #98734e}
+figcaption{padding:0 .65rem .45rem;color:var(--muted);font-size:.75rem}
+.faq{margin:0}
+.faq dt{font-weight:740}
+.faq dd{margin:0 0 .9rem}
+.cta{display:block;text-align:center;background:var(--accent);color:#181009;font-weight:740;text-decoration:none;padding:12px;border-radius:11px;margin-top:15px}
+.cta:hover{background:#ff9b48}
+footer{text-align:center;color:var(--muted);font-size:.8rem;padding:13px 0 1px}
+@media(max-width:460px){.shell{width:100%;margin:0;border-radius:0;min-height:100vh}.topic>summary{gap:9px}}
+
+.guide{background:var(--panel);border-radius:13px;padding:clamp(15px,4vw,24px);margin-bottom:14px}
+.guide h2{font-size:clamp(1.15rem,4vw,1.45rem);line-height:1.25;margin:0 0 12px}
+.guide strong{display:inline}
+.guide figure{margin:1rem 0}
+.guide img{display:block;max-width:100%;height:auto;border-radius:8px}
+.guide figcaption{padding:.5rem 0 0}
+.guide ol{padding-left:1.5rem}
+.guide li+li{margin-top:.45rem}
+.guide code{overflow-wrap:anywhere}
+.guide .download{display:inline-block;margin:.25rem 0;background:var(--accent);color:#181009;padding:.65rem .9rem;border-radius:9px;font-weight:740;text-decoration:none}
+.back{font-size:.9rem}
+</style>
+</head>
+<body>
+<div class="shell">
+<header><a class="brand" href="../opencore/">FIORE STORE</a><a class="back" href="../opencore/">Central de Suporte</a></header>
+<main>
+<h1>Como instalar o Office no Mac</h1>
+<p class="intro">Instale o Office LTSC 2024 no macOS Ventura 13 e ative o Word, Excel e PowerPoint com a licença por volume da sua empresa ou escola.</p>
+<section class="guide">
+<h2>1. Confira a versão do macOS</h2>
+<ol>
+<li>Clique no menu Apple  no canto superior esquerdo da tela.</li>
+<li>Selecione <strong>Sobre Este Mac</strong>.</li>
+<li>Procure a linha <strong>macOS</strong> e anote o nome e o número da versão.</li>
+</ol>
+<figure><a href="sobre-este-mac.png"><img src="sobre-este-mac.png" alt="Janela Sobre Este Mac mostrando a linha com o nome e a versão do macOS" width="280" height="480"></a><figcaption>A imagem mostra onde olhar. Para seguir este exemplo, procure Ventura e um número que começa com 13, como 13.7.8.</figcaption></figure>
+<p>Se aparecer outra versão, verifique os <a href="https://support.microsoft.com/pt-br/office/lifecycle/officeinstall/update-m365-office-macos-ios">requisitos do Office para Mac</a> antes de baixar.</p>
+</section>
+<section class="guide">
+<h2>2. Baixe e instale o Office para o Ventura</h2>
+<p>A linha destacada na imagem mostra o pacote <strong>Office LTSC 2021/2024 Suite Installer</strong>, versão <strong>16.101 (25091314)</strong>. O botão abaixo baixa essa versão pelo servidor da Microsoft.</p>
+<figure><a href="instalador-ventura.png"><img src="instalador-ventura.png" alt="Linha do instalador Office 16.101 (25091314) para macOS Ventura destacada" width="1155" height="938" loading="lazy"></a><figcaption>Use a imagem para conferir a versão e clique nela para ampliar.</figcaption></figure>
+<a class="download" href="https://officecdn.microsoft.com/pr/C1297A47-86C4-4C1F-97FA-950631F94777/MacAutoupdate/Microsoft_365_and_Office_16.101.25091314_Installer.pkg">Baixar Office 16.101 da Microsoft</a>
+<ol>
+<li>Abra <strong>Finder → Downloads</strong> e clique duas vezes no arquivo <code>.pkg</code>.</li>
+<li>Clique em <strong>Continuar</strong>, revise os termos e siga até <strong>Instalar</strong>. Se o Mac pedir, use a senha de administrador na janela do instalador.</li>
+<li>Aguarde a confirmação e clique em <strong>Fechar</strong>.</li>
+</ol>
+<p>Esta é uma versão antiga. Consulte o <a href="https://learn.microsoft.com/en-us/officeupdates/update-history-office-for-mac">histórico oficial do Office para Mac</a> para conferir o pacote.</p>
+</section>
+<section class="guide">
+<h2>3. Ative o Office com a sua licença</h2>
+<p>Se sua organização possui uma licença por volume do <strong>Office LTSC 2024</strong>, procure o <strong>VL Serializer</strong> da mesma edição. Na imagem, <strong>2024</strong> indica a edição da licença. A referência ao Ventura indica a versão do macOS.</p>
+<figure><a href="serializer.png"><img src="serializer.png" alt="Linha do Office 2024 LTSC VL Serializer destacada" width="1155" height="938" loading="lazy"></a><figcaption>Confira a edição na imagem e obtenha o pacote com a equipe de TI da sua organização.</figcaption></figure>
+<ol>
+<li>Peça à equipe de TI o arquivo <code>Microsoft_Office_LTSC_2024_VL_Serializer.pkg</code>. Administradores de licenças podem obtê-lo pelo Centro de Administração do Microsoft 365. <a href="https://learn.microsoft.com/pt-br/microsoft-365-apps/mac/volume-license-serializer">Instruções oficiais da Microsoft</a>.</li>
+<li>Abra o pacote recebido, siga as instruções do instalador e aguarde a conclusão.</li>
+<li>Abra <strong>Finder → Aplicativos → Microsoft Word</strong> e crie um documento em branco para conferir se você consegue editar.</li>
+</ol>
+<p>Se você usa <strong>Microsoft 365</strong> ou comprou o <strong>Office 2024</strong> separadamente, abra o Word e entre com a conta vinculada à licença. <a href="https://support.microsoft.com/pt-br/microsoft-365-activation-licensing/office-install/activate-office-for-mac">Guia de ativação para Mac</a>.</p>
+</section>
+<a class="cta" href="https://wa.me/5519994161157?text=Ol%C3%A1%2C+Fiore%21+Preciso+de+ajuda+para+instalar+o+Office+no+meu+Mac.">Falar com o suporte técnico no WhatsApp</a>
+</main>
+<footer>FIORE STORE • Suporte e pós-venda</footer>
+</div>
+</body>
+</html>
