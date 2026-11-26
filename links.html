@@ -91,6 +91,8 @@
   var WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbw22fQo18s_OSnF8zBUGagKBoAk-5b0bymc2XCPcusiaE-IRb2nFfyZsB31ywvqeV5RBA/exec';
   var SENHA = '';
   var CATEGORIAS = ["Office", "Windows", "macOS", "Drivers", "Programas", "Outros"];
+  // Links fixos (sempre aparecem, não dependem da planilha)
+  var FIXOS = [{ id: "fixo-opencore", nome: "OpenCore (suporte)", url: "https://fiorestore.github.io/suporte/opencore/#inicio", categoria: "Programas", nota: "Guia de suporte do OpenCore da Fiore Store", fixo: true }];
 
   if (new URLSearchParams(location.search).get('painel') === 'funcionario') {
     $("backlink").href = 'https://fiorestore.github.io/painel-funcionario.html';
@@ -116,7 +118,7 @@
   function carregar() {
     return api({ action: "links_listar" }).then(function (res) {
       if (!res.ok) throw new Error(res.erro || "erro");
-      state.links = res.links || [];
+      state.links = FIXOS.concat(res.links || []);
       state.carregado = true;
       render();
     }).catch(function () {
@@ -159,8 +161,8 @@
         '<div class="acoes"><a class="btn btn-principal btn-sm" href="' + esc(l.url) + '" target="_blank" rel="noopener">Abrir</a>' +
         '<button class="btn btn-secundario btn-sm" data-act="copiar" data-id="' + l.id + '">📋 Copiar link</button>' +
         '<a class="btn btn-whats btn-sm" href="https://wa.me/?text=' + encodeURIComponent(msg) + '" target="_blank" rel="noopener">📲 Enviar</a>' +
-        '<button class="btn btn-ghost btn-sm" data-act="editar" data-id="' + l.id + '">Editar</button>' +
-        '<button class="btn btn-danger btn-sm" data-act="excluir" data-id="' + l.id + '">Excluir</button></div></div>';
+        (l.fixo ? '' : '<button class="btn btn-ghost btn-sm" data-act="editar" data-id="' + l.id + '">Editar</button>' +
+        '<button class="btn btn-danger btn-sm" data-act="excluir" data-id="' + l.id + '">Excluir</button>') + '</div></div>';
     }).join("");
   }
 
