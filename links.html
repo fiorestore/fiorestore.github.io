@@ -92,7 +92,7 @@
   var SENHA = '';
   var CATEGORIAS = ["Office", "Windows", "macOS", "Drivers", "Programas", "Outros"];
   // Links fixos (sempre aparecem, não dependem da planilha)
-  var FIXOS = [{ id: "fixo-opencore", nome: "OpenCore (suporte)", url: "https://fiorestore.github.io/suporte/opencore/#inicio", categoria: "Programas", nota: "Guia de suporte do OpenCore da Fiore Store", fixo: true }];
+  var FIXOS = [{ id: "fixo-opencore", nome: "Suporte ao cliente", icone: "⚙️", url: "https://fiorestore.github.io/suporte/opencore/#inicio", categoria: "Programas", nota: "Guia de suporte do OpenCore da Fiore Store", fixo: true }];
 
   if (new URLSearchParams(location.search).get('painel') === 'funcionario') {
     $("backlink").href = 'https://fiorestore.github.io/painel-funcionario.html';
@@ -155,7 +155,7 @@
     if (!lista.length) { $("lista").innerHTML = '<div class="card vazio">Nenhum link encontrado.</div>'; return; }
     $("lista").innerHTML = lista.map(function (l) {
       var msg = "Segue o link do " + l.nome + ": " + l.url;
-      return '<div class="card item"><div><span class="nome">' + esc(l.nome) + "</span>" + (l.categoria ? '<span class="cat">' + esc(l.categoria) + "</span>" : "") + "</div>" +
+      return '<div class="card item"><div><span class="nome">' + (l.icone ? esc(l.icone) + " " : "") + esc(l.nome) + "</span>" + (l.categoria ? '<span class="cat">' + esc(l.categoria) + "</span>" : "") + "</div>" +
         (l.nota ? '<div class="nota">' + esc(l.nota) + "</div>" : "") +
         '<div class="url">' + esc(hostDe(l.url)) + '</div>' +
         '<div class="acoes"><a class="btn btn-principal btn-sm" href="' + esc(l.url) + '" target="_blank" rel="noopener">Abrir</a>' +
